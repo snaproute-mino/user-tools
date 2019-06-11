@@ -839,7 +839,7 @@ IFS='' read -r -d '' KUBEADM_CONF <<"EOL"
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 localAPIEndpoint:
-  bindPort: 16443
+  bindPort: ${KUBERNETES_APISERVER_LOCAL_BIND_PORT}
 bootstrapTokens:
   - groups:
       - system:bootstrappers:kubeadm:default-node-token
