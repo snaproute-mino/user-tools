@@ -3,4 +3,4 @@ dependencies:
 ## mandatory (no tags, but can be overridden with condition
 - name: topology-builder
   version: ">=0.1"
-  repository: "file://../../topology-builder"
+  repository: "https://repo.snaproute.com/chartrepo/virtualization"

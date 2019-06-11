@@ -1,6 +1,6 @@
 dependencies:
 - name: topology-builder
-  repository: file://../../topology-builder
-  version: 0.1.0
-digest: sha256:252879283388bf2f3cdb8cdfd0ca131ac3f58e7b6921dc084ba73ed0e6204fd9
-generated: 2019-03-21T19:32:10.991692248-07:00
+  repository: https://repo.snaproute.com/chartrepo/virtualization
+  version: v1.0.0
+digest: sha256:5ab2f603f37285b2c3ffafdab5051821018a435dd71f1bfce674679294ff70f7
+generated: 2019-06-11T16:11:26.625718023-07:00
