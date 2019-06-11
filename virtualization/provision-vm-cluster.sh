@@ -719,7 +719,7 @@ EOL
 
 ### KUBEADM CONFIGURATION
 
-function bootstrap_kubeadm {
+function kubeadm_bootstrap {
     ADDITIONAL_FILES_PATH_PREPEND=""
     kubeadm_dependencies
     if [[ "${DEPENDENCIES_ONLY}" == "true" ]]; then
