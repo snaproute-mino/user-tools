@@ -799,7 +799,7 @@ function kubeadm_files {
 
 function kubeadm_init {
     echo "Running kubeadm initialization"
-    sudo kubeadm reset --force $> ${REDIR} || true
+    sudo kubeadm reset --force &> ${REDIR} || true
     KUBERNETES_OIDC_CONF=$( eval "echo -e \"${KUBERNETES_OIDC_CONF//\"/\\\"}\"" )
     if [[ "${KUBERNETES_OIDC_CLIENT_ID}" == "" ]]; then
         KUBERNETES_OIDC_CONF=""
