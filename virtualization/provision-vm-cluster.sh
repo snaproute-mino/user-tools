@@ -96,6 +96,7 @@ function linux_kvm2_enable_nested_virtualization {
 function linux_docker_install {
     echo "Installing docker"
 
+    sudo systemctl stop docker.service &> ${REDIR}
     echo -e "${DOCKER_CONF}" | sudo tee ${ADDITIONAL_FILES_PATH_PREPEND}/etc/docker/daemon.json > /dev/null
     sudo DEBIAN_FRONTEND=noninteractive \
         apt-get -yq install docker.io &> ${REDIR}
