@@ -1,0 +1,33 @@
+  
+Instructions on how to connect to VMs:
+
+{{- $cnnos := index .Values "topology-builder" -}}
+{{- $blue := "\x1b[34m" }}
+{{- $red := "\x1b[31m" }}
+{{- $nocolor := "\x1b[0m" }}
+{{- range $name, $vm := $cnnos.vms }}
+{{- $vmname := printf "%s-%s" $.Release.Name $name | trunc 63 | trimSuffix "-" }}
+
+{{ $vmname | upper }}:
+
+  Check VM status:
+    {{ $blue }}kubectl describe vm {{ $vmname }}{{ $nocolor }}
+
+  Check VM Instance:
+    {{ $blue }}kubectl describe vmi -l "snaproute.com/device-name={{ $vmname }}"{{ $nocolor }}
+
+  Check VM Pod:
+    {{ $blue }}kubectl describe pod -l "snaproute.com/device-name={{ $vmname }}"{{ $nocolor }}
+
+  ENVIRONMENT variables:
+    {{ $blue }}export NODE_IP=$(kubectl get nodes --namespace {{ $.Release.Namespace }} -o jsonpath="{.items[0].status.addresses[0].address}"){{ $nocolor }}
+    {{ $blue }}export API_PORT=$(kubectl get --namespace {{ $.Release.Namespace }} -o jsonpath="{.spec.ports[?(@.name=='kube-api')].nodePort}" services {{ $vmname }}){{ $nocolor }}
+    {{ $blue }}export SSH_PORT=$(kubectl get --namespace {{ $.Release.Namespace }} -o jsonpath="{.spec.ports[?(@.name=='ssh')].nodePort}" services {{ $vmname }}){{ $nocolor }}
+
+  SSH to switch:
+    {{ $blue }}ssh root@$NODE_IP -p $SSH_PORT{{ $nocolor }}
+
+  API access for switch (available after CNNOS install completes via ONIE):
+    {{ $blue }}update-kubeconfig $NODE_IP $SSH_PORT $API_PORT{{ $nocolor }}
+  
+{{- end }}

@@ -1,0 +1,6 @@
+dependencies:
+- name: topology-builder
+  repository: file://../../topology-builder
+  version: 0.1.0
+digest: sha256:252879283388bf2f3cdb8cdfd0ca131ac3f58e7b6921dc084ba73ed0e6204fd9
+generated: 2019-03-21T19:32:10.991692248-07:00

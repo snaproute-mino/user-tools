@@ -1,0 +1,53 @@
+# Default values for 2node.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# dhcpserver.defaultURL specifies the CNNOS image to install via ONIE
+# global:
+  # topology-dhcpserver:
+    # defaultURL: "http://192.168.100.73/onie-installer-x86_64.monolithic_v1.0.2-R5"
+
+global:
+  vmsRunning: true
+
+  # this node selector will cause all VMs to be scheduled to this node
+  # this is required if you are using physical NICs with the VM
+  #
+  # nodeSelector:
+  #   kubernetes.io/hostname: server47
+
+topology-builder:
+
+  dhcpOptions:
+    privateOptions:
+    - option: 114
+      value: http://192.168.105.95/onie-installer-x86_64
+
+  # VM configuration defines the size of node and the number of ports to expose (in addition to mgmt0)
+  vms:
+    switch1:
+      ports: 8
+      vmPreset: onie-2core-8g
+      diskSize: 16G
+
+      # individual interfaces can be manually configured with a multus cni config for the port (indexed as p<port_num>, ex: p1, p2, p8)
+      # links will be preferred over these configs
+      #
+      # interfaces:
+      #   p1:
+      #     cniVersion: 0.3.1
+      #     type: macvlan
+      #     master: eno2
+      #     mode: passthru
+      #     ipam: {}
+
+    switch2:
+      ports: 8
+      vmPreset: onie-2core-8g
+      diskSize: 16G
+
+  # Links configuration defines the mapping between switch ports (in the form <switchName>-p<portNumber>)
+  links:
+    switch1-p2: switch2-p2
+    switch1-p3: switch2-p3
+

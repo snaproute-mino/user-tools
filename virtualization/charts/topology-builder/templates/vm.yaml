@@ -1,0 +1,173 @@
+{{- $dhcp := index .Values "topology-dhcpserver" -}}
+{{- $mgmtname := printf "%s-%s" $.Release.Name $dhcp.dhcpConfig.name | trunc 63 | trimSuffix "-" -}}
+{{- $links := dict -}}
+{{- range $name, $value := .Values.links -}}
+{{- $networkname := printf "%s-%s-%s" $.Release.Name $name $value | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- $_ := set $links $name $networkname -}}
+{{- $_ := set $links $value $networkname -}}
+{{- end -}}
+{{- $dhcpOptions := dict -}}
+{{- $_ := set $dhcpOptions "privateOptions" dict -}}
+{{- if hasKey .Values.dhcpOptions "privateOptions" -}}
+{{- range $_, $dhcpOption := .Values.dhcpOptions.privateOptions -}}
+{{- $_ := set $dhcpOptions.privateOptions (toString $dhcpOption.option) $dhcpOption -}}
+{{- end -}}
+{{- end -}}
+{{- range $name, $vm := .Values.vms -}}
+{{- $vmResources := dict -}}
+{{- $vmPreset := index $.Values.vmPresets $vm.vmPreset -}}
+{{- if $vmPreset -}}
+{{- $_ := set $vmResources "cores" $vmPreset.cores -}}
+{{- $_ := set $vmResources "memory" $vmPreset.memory -}}
+{{- else -}}
+{{- $_ := set $vmResources "cores" $.Values.defaultVMResources.cores -}}
+{{- $_ := set $vmResources "memory" $.Values.defaultVMResources.memory -}}
+{{- end -}}
+{{- $vmname := printf "%s-%s" $.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{ $ports := int $vm.ports }}
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachine
+metadata:
+  name: {{ $vmname }}
+  labels:
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app: {{ $.Release.Name }}
+    kubevirt.io/domain: onievm
+    snaproute.com/topology: {{ $.Release.Name }}
+spec:
+  running: {{ $.Values.global.vmsRunning }}
+  template:
+    metadata:
+      labels: 
+        snaproute.com/device-name: {{ $vmname }}
+        snaproute.com/onie-vm: {{ printf "%s-%s" $.Release.Name (default "default" $vm.vmPreset) }}
+        kubevirt.io/domain: onievm
+    spec:
+      affinity:
+        podAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: snaproute.com/topology
+                operator: In
+                values:
+                - {{ $.Release.Name }}
+            topologyKey: "kubernetes.io/hostname"
+      domain:
+        cpu:
+          cores: {{ $vmResources.cores }}
+        resources:
+          requests:
+            memory: {{ $vmResources.memory }}
+        devices:
+          interfaces:
+          - name: mgmt
+            bridge: {}
+            dhcpOptions:
+              privateOptions:
+{{- $vmDhcpOptions := dict -}}
+{{- if hasKey $vm "dhcpOptions" -}}
+{{- range $_, $dhcpOption := $vm.dhcpOptions -}}
+{{- $_ := set $vmDhcpOptions (toString $dhcpOption.option) $dhcpOption -}}
+{{- end -}}
+{{- end -}}
+{{- $mergedOptions := omit $vmDhcpOptions "nonexistentkey" -}}
+{{- $mergedOptions := merge $mergedOptions $dhcpOptions.privateOptions -}}
+{{- range $_, $do := $mergedOptions }}
+              - option: {{ $do.option }}
+                value: {{ $do.value }}
+                encoding: {{ default "plaintext" $do.encoding }}
+{{- end }}
+{{- range $i, $e := until $ports }}
+{{- $port := add $i 1 -}}
+{{- $pciDevice := div $i 8 -}}
+{{- $pciFunction := mod $i 8 -}}
+{{- $linkname := printf "%s-p%d" $name $port }}
+          - name: {{ $linkname }}
+            bridge: {}
+            model: e1000e
+            pciAddress: {{ printf "0000:%02x:00.%01x" $pciDevice $pciFunction }}
+{{- end }}
+          disks:
+          - name: containerdisk
+            disk:
+              bus: virtio
+      networks:
+      - name: mgmt
+{{- if not (hasKey $vm "mgmt") }}
+        pod: {}
+{{- else }}
+        multus:
+          networkName: {{ default (printf "%s-clients" $mgmtname) $vm.mgmtName }}
+{{- end }}
+{{- range $i, $e := until $ports }}
+{{- $port := add $i 1 -}}
+{{- $linkname := printf "%s-p%d" $name $port }}
+      - name: {{ $linkname }}
+        multus:
+{{- if hasKey $links $linkname -}}
+{{- $networkname := index $links $linkname }}
+          networkName: {{ $networkname }}-conf
+{{- else }}
+          networkName: {{ printf "%s-%s" $.Release.Name $linkname }}-conf
+{{- end }}
+{{- end }}
+      volumes:
+        - name: containerdisk
+          containerDisk:
+            image: {{ index $.Values.onieImages $vm.diskSize }}
+---
+{{- $sshPort := $.Values.sshPort -}}
+{{ $apiPort := $.Values.apiPort }}
+{{- if eq $.Values.global.serviceType "NodePort" -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $vmname }}
+  labels:
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app: {{ $.Release.Name }}
+spec:
+  type: NodePort
+  ports:
+  - name: ssh
+    protocol: TCP
+    port: {{ $sshPort }}
+    targetPort: {{ $sshPort }}
+  - name: kube-api
+    protocol: TCP
+    port: {{ $apiPort }}
+    targetPort: {{ $apiPort }}
+  selector:
+    snaproute.com/device-name: {{ $vmname }}
+---
+{{ else }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $vmname }}
+  labels:
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app: {{ $.Release.Name }}
+spec:
+  type: LoadBalancer
+  ports:
+  - name: ssh
+    protocol: TCP
+    port: {{ $sshPort }}
+    targetPort: {{ $sshPort }}
+  - name: kube-api
+    protocol: TCP
+    port: {{ $apiPort }}
+    targetPort: {{ $apiPort }}
+  selector:
+    snaproute.com/device-name: {{ $vmname }}
+---
+{{ end }}
+{{ end }}

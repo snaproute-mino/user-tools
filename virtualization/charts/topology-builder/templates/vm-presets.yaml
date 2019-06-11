@@ -1,0 +1,40 @@
+{{ range $name, $preset := .Values.vmPresets -}}
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachineInstancePreset
+metadata:
+  name: {{ printf "%s-%s" $.Release.Name $name | trunc 63 | trimSuffix "-" }}
+spec:
+  selector:
+    matchLabels:
+      kubevirt.io/domain: onievm
+      snaproute.com/onie-vm: {{ printf "%s-%s" $.Release.Name $name | trunc 63 | trimSuffix "-" }}
+  domain:
+    devices: {}
+    cpu:
+      cores: {{ $preset.cores }}
+    resources:
+      requests:
+        memory: {{ $preset.memory }}
+---
+{{ end }}
+apiVersion: kubevirt.io/v1alpha3
+kind: VirtualMachineInstancePreset
+metadata:
+  name: {{ printf "%s-%s" $.Release.Name "default" | trunc 63 | trimSuffix "-" }}
+  labels:
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+    chart: {{ $.Chart.Name }}-{{ .Chart.Version }}
+    app: {{ $.Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      kubevirt.io/domain: onievm
+      snaproute.com/onie-vm: default
+  domain:
+    devices: {}
+    cpu:
+      cores: 2
+    resources:
+      requests:
+        memory: 4G

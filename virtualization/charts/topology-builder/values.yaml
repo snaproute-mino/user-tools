@@ -1,0 +1,114 @@
+
+# Port configurations define the standard ports to expose via nodePort services
+apiPort: 16443
+sshPort: 22
+
+global:
+  vmsRunning: false
+
+  # this node selector will cause all VMs to be scheduled to this node
+  # this is required if you are using physical NICs with the VM
+  #
+  # nodeSelector: 
+  #   kubernetes.io/hostname: server47
+
+  # serviceType can be either LoadBalancer or NodePort
+  serviceType: LoadBalancer 
+
+dhcpOptions:
+  privateOptions: []
+
+#  - option: 114
+#    value: http://192.168.100.73/onie-installer-x86_64
+
+# VM configuration defines the size of node and the number of ports to expose (in addition to mgmt0)
+vms: {}  # this must be empty in base template since overrides are merged
+
+# Example:
+# vms:
+#   switch1:
+#     ports: 8
+#     vmPreset: small
+#     diskSize: 8G
+#
+#     individual interfaces can be manually configured with a multus cni config for the port (indexed as p<port_num>, ex: p1, p2, p8)
+#     links will be preferred over these configs
+#
+#     interfaces:
+#       p1:
+#         cniVersion: 0.3.1
+#         type: macvlan
+#         master: eno2
+#         mode: passthru
+#         ipam: {}
+#    
+#   switch2: 
+#     ports: 8
+#     vmPreset: small
+#     diskSize: 16G
+
+# Links configuration defines the mapping between switch ports (in the form <switchName>-p<portNumber>)
+links: {}
+
+# Example:
+# links:
+#   switch1-p1: switch2-p1
+#   switch1-p2: switch2-p2
+
+
+defaultVMResources:
+  cores: 2
+  memory: 8G
+# VM Presets define the presets that can be applied to each vm
+vmPresets:
+  onie-2core-2g:
+    cores: 2
+    memory: 2G
+
+  onie-2core-4g:
+    cores: 2
+    memory: 4G
+
+  onie-2core-8g:
+    cores: 2
+    memory: 8G  
+
+  onie-4core-8g:
+    cores: 4
+    memory: 8G
+
+  onie-4core-16g:
+    cores: 4
+    memory: 16G
+
+  onie-8core-16g:
+    cores: 8
+    memory: 16G
+
+  onie-8core-32g:
+    cores: 8
+    memory: 32G
+
+onieImages:
+  8G: repo.snaproute.com/vm-infra/onie/onie-8g:v1.0
+  16G: repo.snaproute.com/vm-infra/onie/onie-16g:v1.0
+  32G: repo.snaproute.com/vm-infra/onie/onie-32g:v1.0
+
+
+# DHCP server configuration for management network
+topology-dhcpserver:
+  dhcpConfig:
+    enabled: false
+    name: outofband
+    clientCNINetwork: outofband-clients
+    serverCNINetwork: outofband-dhcpserver
+
+    cidr: 192.168.255.0/24
+    subnet: 192.168.255.0
+    netmask: 255.255.255.0
+    gateway: 192.168.255.1
+    rangeStart: 192.168.255.10
+    rangeEnd: 192.168.255.254
+
+    # tftpServerName: 192.168.100.73  # used if vm.mgmt="pod"
+    # defaultURL: "http://192.168.100.73/kvm/onie-installer-x86_64"

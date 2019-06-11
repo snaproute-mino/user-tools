@@ -1,0 +1,6 @@
+#requirements.yaml
+dependencies:
+## mandatory (no tags, but can be overridden with condition
+#- name: topology-dhcpserver
+#  version: ">=0.1"
+#  repository: "file://../topology-dhcpserver"

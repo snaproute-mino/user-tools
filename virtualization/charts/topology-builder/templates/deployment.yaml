@@ -1,0 +1,43 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ $.Release.Name }}.topology
+  labels:
+    app: {{ template "current.name" . }}
+    chart: {{ template "current.chart" . }}
+    release: {{ .Release.Name }}
+    heritage: {{ .Release.Service }}
+    snaproute.com/topology: {{ $.Release.Name }}
+{{- if .Values.podAnnotations }}
+  # Allows custom annotations to be specified
+  annotations:
+{{ toYaml .Values.podAnnotations | indent 4 }}
+{{- end }}
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: {{ template "current.name" . }}
+        chart: {{ template "current.chart" . }}
+        release: {{ .Release.Name }}
+        heritage: {{ .Release.Service }}
+        snaproute.com/topology: {{ $.Release.Name }}
+{{- if .Values.podAnnotations }}
+      # Allows custom annotations to be specified
+      annotations:
+{{ toYaml .Values.podAnnotations | indent 8 }}
+{{- end }}
+    spec:
+      restartPolicy: Always
+      containers:
+      - name: topology
+        image: k8s.gcr.io/pause:3.1
+      nodeSelector:
+{{- if .Values.global.nodeSelector }}
+{{ toYaml .Values.global.nodeSelector | indent 8 }}
+{{- else }}
+{{ toYaml .Values.nodeSelector | indent 8 }}
+{{- end }}

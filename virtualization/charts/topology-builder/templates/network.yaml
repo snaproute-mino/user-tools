@@ -1,0 +1,61 @@
+{{- $scratch := dict -}}
+{{- $networks := dict "networks" list -}}
+{{- $links := dict -}}
+{{- range $name, $value := .Values.links -}}
+{{- $networkname := printf "%s-%s-%s" $.Release.Name $name $value | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
+{{- $_ := set $links $name $networkname -}}
+{{- $_ := set $links $value $networkname -}}
+{{- $l := append (index $networks "networks") $networkname -}}
+{{- $_ := set $networks "networks" $l -}}
+{{- end -}}
+{{- range $name, $vm := .Values.vms -}}
+{{- $ports := int $vm.ports -}}
+{{- range $i, $e := until $ports -}}
+{{- $port := add $i 1 -}}
+{{- $portname := printf "p%d" $port }}
+{{- $linkname := printf "%s-%s" $name $portname }}
+{{- $networkname := (printf "%s-%s" $.Release.Name $linkname ) -}}
+{{- $_ := set $scratch "manualConfig" false -}}
+{{- if not (hasKey $links $linkname) -}}
+{{- if $vm.interfaces -}}{{- if hasKey $vm.interfaces $portname -}}
+{{- $_ := set $scratch "manualConfig" true -}}
+{{- end -}}{{- end -}}
+{{- if $scratch.manualConfig -}}
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ $networkname }}-conf
+  labels:
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
+    app: {{ $.Release.Name }}
+spec:
+  config: {{ index $vm.interfaces $portname | toJson | squote }}
+---
+{{ else -}}
+{{- $l := append (index $networks "networks") (printf "%s-%s" $.Release.Name $linkname ) -}}
+{{- $_ := set $networks "networks" $l -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- end -}}
+{{- range $_, $networklist := $networks }}
+{{- range $bridge, $networkname := $networklist -}}
+{{ $bridgename := printf "br%d%s" $bridge $.Release.Name | trunc 16 }}
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ $networkname }}-conf
+spec:
+  config: '{
+      "cniVersion": "0.3.1",
+      "name": "{{ $networkname }}-conf",
+      "type": "bridge",
+      "bridge": "{{ $bridgename }}",
+      "ipam": {},
+      "cleanupBridge": true
+    }'
+---
+{{ end -}}
+{{- end -}}

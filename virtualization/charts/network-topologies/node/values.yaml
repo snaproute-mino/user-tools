@@ -1,0 +1,38 @@
+# Default values for 2node.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# dhcpserver.defaultURL specifies the CNNOS image to install via ONIE
+# global:
+  # topology-dhcpserver:
+    # defaultURL: "http://192.168.100.73/onie-installer-x86_64.monolithic_v1.0.2-R5"
+
+global:
+  vmsRunning: true
+
+topology-builder:
+
+  dhcpOptions:
+    privateOptions:
+    - option: 114
+      value: http://192.168.105.95/onie-installer-x86_64
+
+  # VM configuration defines the size of node and the number of ports to expose (in addition to mgmt0)
+  vms:
+    switch1:
+      ports: 48
+      vmPreset: onie-2core-8g
+      diskSize: 16G
+      # dhcpOptions:
+      # - option: 114
+      #  value: http://192.168.100.73/onie-installer-x86_64
+
+      # tftpServerName: 192.168.100.73
+
+  # Links configuration defines the mapping between switch ports (in the form <switchName>-p<portNumber>)
+  links:
+    switch1-p1: switch1-p5
+    switch1-p2: switch1-p6
+    switch1-p3: switch1-p7
+    switch1-p4: switch1-p8
+

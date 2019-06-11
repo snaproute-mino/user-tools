@@ -1,0 +1,31 @@
+{{- $vms := dict -}}
+{{ range $name, $vm := .Values.vms }}
+{{- $vminfo := dict }}
+{{- $vmname := printf "%s-%s" $.Release.Name $name | trunc 63 | trimSuffix "-" -}}
+{{- $_ := set $vminfo "vmname" $vmname }}
+{{- $_ := set $vminfo "namespace" $.Release.Namespace }}
+{{- $_ := set $vminfo "releasename" $.Release.Name -}}
+{{- $_ := set $vminfo "configmapname" (printf "%s-%s" $.Release.Name "topology" | trunc 63 | trimSuffix "-" ) -}}
+{{- $_ := set $vms $vmname $vminfo -}}
+{{- end -}}
+{{- $info := dict -}}
+{{- $_ := set $info "vms" $vms -}}
+{{- $_ := set $info "configmapname" (printf "%s-%s" .Release.Name "topology" | trunc 63 | trimSuffix "-" ) -}}
+{{- $_ := set $info "namespace" $.Release.Namespace -}}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $info.configmapname }}
+  labels:
+    heritage: {{ $.Release.Service }}
+    release: {{ $.Release.Name }}
+    chart: {{ $.Chart.Name }}-{{ .Chart.Version }}
+    app: {{ $.Release.Name }}
+data:
+  README.MD: {{ include "topology-builder.readme" . | quote }}
+  topology-helper.sh: {{ include "topology-builder.kubeconfigupdate" . | quote }}
+  topology.updatekubeconfigs: {{ include "topology-builder.topology.updatekubeconfigs" $info | quote }}
+  topology.cleanupkubeconfigs: {{ include "topology-builder.topology.cleanupkubeconfigs" $info | quote }}
+{{ range $name, $vm := $info.vms }}
+  {{ $name }}.env: {{ include "topology-builder.node.env" $vm | quote }}
+{{- end -}}
