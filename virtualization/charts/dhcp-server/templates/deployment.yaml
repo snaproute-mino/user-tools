@@ -1,0 +1,58 @@
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: {{ include "current.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "current.name" . }}
+    helm.sh/chart: {{ include "current.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "current.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "current.name" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+{{- if  .Values.dhcpConfig.serverCNINetwork }}
+      annotations:
+        k8s.v1.cni.cncf.io/networks: "{{ printf "%s-%s" .Release.Name .Values.dhcpConfig.serverCNINetwork }}"
+{{- end }}
+    spec:
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - containerPort: 67
+                port: 67
+                protocol: UDP
+          volumeMounts:
+            - name: dhcp-config
+              mountPath: /data/dhcpd.conf
+              subPath: dhcpd.conf
+          resources:
+{{ toYaml .Values.resources | indent 12 }}
+      volumes:
+        - name: dhcp-config
+          configMap:
+            name: {{ include "current.fullname" . }}
+            items:
+             - key: config
+               path: dhcpd.conf
+    {{- with .Values.nodeSelector }}
+      nodeSelector:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.affinity }}
+      affinity:
+{{ toYaml . | indent 8 }}
+    {{- end }}
+    {{- with .Values.tolerations }}
+      tolerations:
+{{ toYaml . | indent 8 }}
+    {{- end }}

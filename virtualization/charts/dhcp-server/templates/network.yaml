@@ -1,0 +1,43 @@
+{{ $bridgename := printf "%s-%s" $.Release.Name .Values.dhcpConfig.name | trunc 16 | trimSuffix "-" -}}
+{{- if .Values.dhcpConfig.serverCNINetwork }}
+{{- $mgmtname := printf "%s-%s" $.Release.Name .Values.dhcpConfig.serverCNINetwork | trunc 63 | trimSuffix "-" -}}
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ $mgmtname }}
+spec:
+  config: '{
+      "cniVersion": "0.3.1",
+      "name": "{{ $mgmtname }}",
+      "type": "bridge",
+      "bridge": "{{ $bridgename }}",
+      "ipam": {
+        "type": "host-local",
+        "subnet": "{{ .Values.dhcpConfig.cidr }}",
+        "gateway": "{{ .Values.dhcpConfig.gateway }}",
+        "routes": [
+          { "dst": "0.0.0.0/0" }
+        ]
+      },
+      "ipMasq": true,
+      "isDefaultGateway": true
+    }'
+---
+{{ end -}}
+{{- if .Values.dhcpConfig.clientCNINetwork }}
+{{ $mgmtname := printf "%s-%s" $.Release.Name .Values.dhcpConfig.clientCNINetwork | trunc 63 | trimSuffix "-" -}}
+apiVersion: "k8s.cni.cncf.io/v1"
+kind: NetworkAttachmentDefinition
+metadata:
+  name: {{ $mgmtname }}
+spec:
+  config: '{
+      "cniVersion": "0.3.1",
+      "name": "{{ $mgmtname }}",
+      "type": "bridge",
+      "bridge": "{{ $bridgename }}",
+      "ipam": {},
+      "ipMasq": true
+    }'
+---
+{{ end -}}

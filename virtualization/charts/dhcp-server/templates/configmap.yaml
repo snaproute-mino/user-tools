@@ -1,0 +1,31 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "current.fullname" . }}
+  labels:
+    app.kubernetes.io/name: {{ include "current.name" . }}
+    helm.sh/chart: {{ include "current.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+data:
+  config: |
+    option space cnnos_ztp_local;
+    option cnnos_ztp_local.file_type code 1 = text;
+    option cnnos_ztp_local.file_url code 2 = text;
+    option cnnos_ztp code 239 = encapsulate cnnos_ztp_local;
+
+    subnet {{ .Values.dhcpConfig.subnet }} netmask {{ .Values.dhcpConfig.netmask }} {
+      range {{ .Values.dhcpConfig.rangeStart }} {{ .Values.dhcpConfig.rangeEnd }};
+      max-lease-time 120;
+      default-lease-time 120;
+
+      option routers {{ .Values.dhcpConfig.gateway }};
+      option subnet-mask {{ .Values.dhcpConfig.netmask }};
+      option domain-name "{{ .Values.dhcpConfig.name }}.local";
+
+{{- if and (hasKey .Values.global "topology-dhcpserver") (hasKey (index .Values.global "topology-dhcpserver") "defaultURL") }}
+      option default-url "{{ index (index .Values.global "topology-dhcpserver") "defaultURL" }}";
+{{- else if .Values.dhcpConfig.defaultURL }}
+      option default-url "{{ .Values.dhcpConfig.defaultURL }}";
+{{ end }}
+    }

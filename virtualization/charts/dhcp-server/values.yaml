@@ -1,0 +1,51 @@
+# Default values for dhcp-server.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+dhcpConfig:
+  name: outofband
+  clientCNINetwork: outofband-clients
+  serverCNINetwork: outofband-dhcpserver
+
+  cidr: 169.254.115.0/24
+  subnet: 169.254.115.0
+  netmask: 255.255.255.0
+  gateway: 169.254.115.1
+  rangeStart: 169.254.115.10
+  rangeEnd: 169.254.115.254
+  # defaultURL: "http://192.168.100.73/onie-installer-x86_64"
+
+  
+image:
+  repository: 'networkboot/dhcpd'
+  tag: 'latest'
+  pullPolicy: 'Always'
+
+nameOverride: ""
+fullnameOverride: ""
+
+global:
+  registry: ''
+
+service:
+  type: ClusterIP
+  port: 67
+  protocol: UDP
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #  cpu: 100m
+  #  memory: 128Mi
+  # requests:
+  #  cpu: 100m
+  #  memory: 128Mi
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
