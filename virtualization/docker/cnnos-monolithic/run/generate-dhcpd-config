@@ -1,0 +1,61 @@
+#!/bin/bash
+
+if [[ "${DHCPD_TEMPLATE_FILE:-}" != "" ]]; then
+    set -euxo pipefail
+    DHCPD_CONFIG_TEMPLATE="$(cat ${DHCPD_TEMPLATE_FILE})"
+fi
+
+if [[ "${DHCPD_CONFIG_FILE:-}" != "" ]]; then
+    DHCPD_CONFIG_FILE=/etc/dhcp/dhcpd.conf
+fi
+
+
+IFS='' read -r -d '' GLOBAL_TEMPLATE <<"EOL"
+option space cnnos_ztp_local;
+option cnnos_ztp_local.file_type code 1 = text;
+option cnnos_ztp_local.file_url code 2 = text;
+option cnnos_ztp code 239 = encapsulate cnnos_ztp_local;
+
+EOL
+
+IFS='' read -r -d '' SUBNET_TEMPLATE <<"EOL"
+subnet ${DHCP_SUBNET} netmask ${DHCP_NETMASK} {
+    # range ${DHCP_RANGE_START} ${DHCP_RANGE_END};
+    max-lease-time 120;
+    default-lease-time 120;
+
+    option routers ${DHCP_GATEWAY};
+    option subnet-mask ${DHCP_NETMASK};
+    # option domain-name "${DOMAIN_NAME:-}";
+
+    option default-url "${HTTP_SERVER_IP}:${HTTP_SERVER_PORT}/monolithic/onie-installer-x86_64";
+}
+
+EOL
+
+function hex2ip {
+    eval "$2"=$(printf "%d." $(
+        echo $1 | sed 's/../0x& /g' | tr ' ' '\n' | tac
+        ) | sed 's/\.$/\n/')
+}
+
+DHCPD_CONFIG=$( eval "echo -e \"${GLOBAL_TEMPLATE//\"/\\\"}\"" )
+for interface in $(cat /proc/net/route | awk '!/Iface/{print $1}' | sort | uniq); do
+    destination="00000000"
+    ROUTE_CMD="awk '\$1 == \"${interface}\" && \$2 != ${destination} { print \$0 }' /proc/net/route"
+    ROUTE=$(eval "${ROUTE_CMD}" )
+    hex2ip "$(echo \"$ROUTE\" | awk '{print $2}')" "DHCP_SUBNET"
+    hex2ip "$(echo \"$ROUTE\" | awk '{print $8}')" "DHCP_NETMASK"
+    hex2ip "$(echo \"$ROUTE\" | awk '{print $3}')" "DHCP_GATEWAY"
+    HTTP_SERVER_IP=$( ifconfig ${interface} | grep 'inet addr' | cut -d: -f2 | awk '{print $1}' )
+
+    echo "$interface: $DHCP_SUBNET $DHCP_NETMASK $DHCP_GATEWAY"
+    SUBNET_CONFIG=$( eval "echo -e \"${SUBNET_TEMPLATE//\"/\\\"}\"" )
+    DHCPD_CONFIG=$( eval "echo -e \"${DHCPD_CONFIG//\"/\\\"}\n${SUBNET_CONFIG//\"/\\\"}\"" )
+done
+
+echo -e "DHCP CONFIG:\n$DHCPD_CONFIG"
+
+mkdir -p $(dirname ${DHCPD_CONFIG_FILE})
+echo -e "${DHCPD_CONFIG}" > ${DHCPD_CONFIG_FILE}
+

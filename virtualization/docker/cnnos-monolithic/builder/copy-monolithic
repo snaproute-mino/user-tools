@@ -1,0 +1,19 @@
+#!/bin/bash
+
+set -euxo pipefail
+
+cd /data/monolithic/
+
+if [[ "${MONOLITHIC_URL}" == "" ]]; then
+    >&2 echo "MONOLITHIC_URL build-arg must be set to either a file in docker context or a HTTP/HTTPS URL."
+    exit 1
+fi
+
+if [[ ${MONOLITHIC_URL} == *"://"* ]]; then
+    echo "Downloading ${MONOLITHIC_URL}"
+    curl -LO "${MONOLITHIC_URL}"
+else \
+    cp /context/${MONOLITHIC_URL} /data/monolithic/
+fi
+
+ln -s $(find . -type f ) onie-installer-x86_64
