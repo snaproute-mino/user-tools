@@ -65,14 +65,14 @@ function __set_monolithic_defaults {
 }
 
 IFS='' read -r -d '' MONOLITHIC_SKAFFOLD_TEMPLATE <<"EOL"
-apiVersion: skaffold/v1beta6
+apiVersion: skaffold/v1beta11
 kind: Config
 build:
   tagPolicy:
     envTemplate:
       template: "{{ if .IMAGE_REPOSITORY }}{{ .IMAGE_REPOSITORY }}/{{ .IMAGE_NAME }}:{{ if .TAG }}{{ .TAG }}{{ else }}dev{{ end }}{{ else }}{{.DOCKER_REGISTRY}}/{{.DOCKER_REPOSITORY}}/{{ .IMAGE_NAME }}:{{ if .TAG }}{{ .TAG }}{{ else }}dev{{ end }}{{ end }}"
   artifacts:
-  - image: monolithic
+  - image: cnnos-monolithic
     context: ${DOCKER_CONTEXT}
     docker:
       dockerfile: Dockerfile
