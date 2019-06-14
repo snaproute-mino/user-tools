@@ -2958,6 +2958,10 @@ function bootstrap {
 
     sudo mkdir -p /usr/local/bin &> /dev/null || true
 
+    if [[ "${OS}" == "linux" ]]; then
+        sudo apt-get -yq update &> /dev/null
+    fi
+
     ha_bootstrap
 
     if [[ "${BOOTSTRAPPER}" == "minikube" ]]; then
