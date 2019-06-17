@@ -178,6 +178,7 @@ Generally, it is recommended to deploy an OIDC provider (like coreos/dex) to int
 
 1) Create a namespace / service account / rbac role / rbac rolebinding for a new user (run this on the server you provisioned)
 
+```
 USER_EMAIL=john.doe@test
 NAME=${USER_EMAIL//@*/}
 DOMAIN=${USER_EMAIL//*@/}
@@ -216,10 +217,11 @@ roleRef:
   name: ${NAME}.${DOMAIN}
   apiGroup: rbac.authorization.k8s.io
 EOL
-
+```
 
 2) Generate a kubeconfig file for the user
 
+```
 USER_EMAIL=john.doe@test
 NAME=${USER_EMAIL//@*/}
 NAMESPACE=${NAME//.}
@@ -252,33 +254,43 @@ KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-context ${CONTEXT_NAME} \
         --namespace ${NAMESPACE}
 
 KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config use-context ${CONTEXT_NAME}
+```
 
 3) Copy the generated kubeconfig file to the machine / user home directory that you'd like to use when remotely accessing the cluster
 
+```
 USERNAME=jdoe
 USER_IP=192.168.0.10
 KUBE_DIR=/home/${USERNAME}/.kube/
 ssh ${USERNAME}@${USER_IP} mkdir -p ${KUBE_DIR}
 scp ./kubeconfig ${USERNAME}@${USER_IP}:${KUBE_DIR}/config
-
+```
 
 ## Installing user tools to local laptop / server
 
 1) Download the user tools installation script
 
-    curl -Lo user-tools-install.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/master/user-tools-install.sh
-
+```
+curl -Lo user-tools-install.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/master/user-tools-install.sh
+```
 
 2) Make the script executable
-    chmod +x user-tools-install.sh
+
+```
+chmod +x user-tools-install.sh
+```
 
 3) Run the user tools installation
-    ./user-tools-install.sh
+
+```
+./user-tools-install.sh
+```
 
 4) Verify you can access the cluster using kubectl and the kubeconfig you generated
 
+```
 kubectl get sa
-
+```
 
 ## Request an account for access to CN-NOS release images
 
@@ -286,76 +298,220 @@ kubectl get sa
 
 2) Create an image pull secret for the account provided in step 1 (this should be created in the namespace that you'll be deploying cnnos-topologies)
 
+```
 kubectl create secret docker-registry snaproute-pull-secret \
 --docker-server=repo.snaproute.com \
 --docker-username=john.doe@customer.local \
 --docker-email=john.doe@customer.local \
 --docker-password=PasswordProvided
-
+```
 
 ## Deploying an onie-http server for hosting cn-nos monolithic image to ONIE VMs
 
 1) Add the cn-nos release repo
 
+```
 helm repo add cnnos-release --username="john.doe@customer.local" --password="PasswordProvided" https://repo.snaproute.com/chartrepo/release
+```
 
 2) Perform a repo update to ensure you have access to the latest charts
 
+```
 helm repo update
+```
 
 3) List the available monolithic releases
+
+```
 helm search cnnos-release/cnnos-monolithic --versions
+```
 
 4) Download the desired version chart
 
+```
 VERSION=v1.1.0-R15
 helm fetch cnnos-release/cnnos-monolithic --version ${VERSION}
+```
 
 5) Deploy an onie-http server instance to host the desired CN-NOS monolithic image (referencing the imagePullSecret created earlier)
 
+```
 PULL_SECRET=snaproute-pull-secret
 VERSION=v1.1.0-R15
-helm template --name onie-http-server --set imagePullSecret="${PULL_SECRET} cnnos-monolithic-${VERSION}.tgz | kubectl create -f -
-
+helm template --name onie-http-server --set imagePullSecret=${PULL_SECRET} cnnos-monolithic-${VERSION}.tgz | kubectl create -f -
+```
 
 ## Deploy a VM topology referencing the onie-http server / image you deployed
 
 1) Add the cnnos-virtualization repo
 
+```
 helm repo add cnnos-virtualization https://repo.snaproute.com/chartrepo/virtualization
-
+```
 
 2) Perform a repo update to ensure you have access to the latest charts
 
+```
 helm repo update
-
+```
 
 3) List the available monolithic releases
 
+```
 helm search cnnos-virtualization
-
+```
 
 4) Download the desired version chart
 
+```
 TOPOLOGY=node2node
 VERSION=v1.0.0
 helm fetch cnnos-virtualization/${TOPOLOGY} --version ${VERSION}
-
+```
 
 5) Deploy the chart referencing the service IP of the onie-http-server you deployed (CHART_FILE should reference the location where you fetched it in previous step)
 
+```
 TOPOLOGY=node2node
 VERSION=v1.0.0
 CHART_FILE=${TOPOLOGY}-${VERSION}.tgz
 TOPOLOGY_NAME=my-topology
 CLUSTER_IP=$(kubectl get service onie-http-server-cnnos-monolithic -o jsonpath="{.spec.clusterIP}")
 
-helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/onie-installer-x86-64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
+helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/monolithic/onie-installer_x86-64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
+```
 
-6) Verify the VMs are deployed
+```
+pferrell@pferrell-lnx:~$ TOPOLOGY=node2node
+pferrell@pferrell-lnx:~$ VERSION=v1.0.0
+pferrell@pferrell-lnx:~$ helm fetch cnnos-virtualization/${TOPOLOGY} --version ${VERSION}
+pferrell@pferrell-lnx:~$ TOPOLOGY=node2node
+pferrell@pferrell-lnx:~$ VERSION=v1.0.0
+pferrell@pferrell-lnx:~$ CHART_FILE=${TOPOLOGY}-${VERSION}.tgz
+pferrell@pferrell-lnx:~$ TOPOLOGY_NAME=my-topology
+pferrell@pferrell-lnx:~$ CLUSTER_IP=$(kubectl get service onie-http-server-cnnos-monolithic -o jsonpath="{.spec.clusterIP}")
+pferrell@pferrell-lnx:~$ 
+pferrell@pferrell-lnx:~$ helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/monolithic/onie-installer-x86_64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
+configmap/my-topology-topology created
+deployment.extensions/my-topology.topology created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p2-switch2-p2-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p3-switch2-p3-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p1-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p4-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p5-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p6-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p7-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p8-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch2-p1-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch2-p4-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch2-p5-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch2-p6-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch2-p7-conf created
+networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch2-p8-conf created
+virtualmachine.kubevirt.io/my-topology-switch1 created
+service/my-topology-switch1 created
+virtualmachine.kubevirt.io/my-topology-switch2 created
+service/my-topology-switch2 created
+virtualmachineinstancepreset.kubevirt.io/my-topology-onie-2core-2g created
+virtualmachineinstancepreset.kubevirt.io/my-topology-onie-2core-4g created
+virtualmachineinstancepreset.kubevirt.io/my-topology-onie-2core-8g created
+virtualmachineinstancepreset.kubevirt.io/my-topology-onie-4core-16g created
+virtualmachineinstancepreset.kubevirt.io/my-topology-onie-4core-8g created
+virtualmachineinstancepreset.kubevirt.io/my-topology-onie-8core-16g created
+virtualmachineinstancepreset.kubevirt.io/my-topology-onie-8core-32g created
+virtualmachineinstancepreset.kubevirt.io/my-topology-default created
+```
 
+6) Verify the VMs are deployed and running
+
+```
 kubectl get vm
 
 kubectl get vmi
 
 kubectl get pod
+
+pferrell@pferrell-lnx:~$ kubectl get vm
+NAME                  AGE   RUNNING   VOLUME
+my-topology-switch1   52s   true      
+my-topology-switch2   52s   true      
+
+
+pferrell@pferrell-lnx:~$ kubectl get vmi
+NAME                  AGE   PHASE        IP    NODENAME
+my-topology-switch1   19s   Scheduling         
+my-topology-switch2   19s   Scheduling  
+
+pferrell@pferrell-lnx:~$ kubectl get vmi
+NAME                  AGE   PHASE     IP              NODENAME
+my-topology-switch1   54s   Running   10.41.128.236   server41
+my-topology-switch2   54s   Running   10.41.128.237   server41
+
+pferrell@pferrell-lnx:~$ kubectl get pod
+NAME                                                 READY   STATUS    RESTARTS   AGE
+my-topology.topology-87c555694-9hjrk                 1/1     Running   0          47s
+onie-http-server-cnnos-monolithic-75b986b495-zb9hj   1/1     Running   0          2m40s
+virt-launcher-my-topology-switch1-zp7tx              2/2     Running   0          47s
+virt-launcher-my-topology-switch2-2cczj              2/2     Running   0          46s
+```
+
+7) Console to a switch and onie installation can be observed (console command will wait until VMI is running)
+
+```
+pferrell@pferrell-lnx:~$ virtctl console my-topology-switch1
+Successfully connected to my-topology-switch1 console. The escape sequence is ^]
+
+ONIE: OS Install Mode ...
+Platform  : x86_64-kvm_x86_64-r0
+Version   : master-201903271045-dirty
+Build Date: 2019-03-27T10:45+00:00
+Info: Mounting kernel filesystems... done.
+Info: Mounting ONIE-BOOT on /mnt/onie-boot ...
+Info: BIOS mode: legacy
+Running demonstration platform init pre_arch routines...
+Running demonstration platform init post_arch routines...
+Info: Making NOS install boot mode persistent.
+Installing for i386-pc platform.
+Installation finished. No error reported.
+network_driver: Running demonstration pre_init routines...
+network_driver: Running ASIC/SDK init routines...
+network_driver: Running demonstration post_init routines...
+Info: Using eth0 MAC address: 02:bb:26:87:c4:05
+Info: Using eth1 MAC address: 7a:2f:28:f3:cd:24
+Info: eth0:  Checking link... up.
+Info: Trying DHCPv4 on interface: eth0
+ONIE: Using DHCPv4 addr: eth0: 10.41.128.246 / 255.255.255.0
+Info: eth1:  Checking link... up.
+Info: Trying DHCPv4 on interface: eth1
+Warning: Unable to configure interface using DHCPv4: eth1
+ONIE: Using link-local IPv4 addr: eth1: 169.254.42.218/16
+Starting: klogd... done.
+Starting: dropbear ssh daemon... done.
+Starting: telnetd... done.
+discover: installer mode detected.  Running installer.
+Starting: discover... done.
+
+Please press Enter to activate this console. Info: eth0:  Checking link... up.
+Info: Trying DHCPv4 on interface: eth0
+ONIE: Using DHCPv4 addr: eth0: 10.41.128.246 / 255.255.255.0
+Info: eth1:  Checking link... up.
+Info: Trying DHCPv4 on interface: eth1
+Warning: Unable to configure interface using DHCPv4: eth1
+ONIE: Using link-local IPv4 addr: eth1: 169.254.165.95/16
+ONIE: Starting ONIE Service Discovery
+Info: Attempting http://10.41.225.99/monolithic/onie-installer-x86_64 ...
+ONIE: Executing installer: http://10.41.225.99/monolithic/onie-installer-x86_64
+
+#### Snaproute CN-NOS installer ####
+Install mode [ ? ]. Progress: 22% 
+  Booting `SnapL Image (20190515231420)'
+
+Loading SNAPL ...
+starting version 234
+
+CN_NOS CN-NOS-1.0.0 CN-NOS-unknown ttyS0
+
+CN-NOS-unknown login: root
+Welcome to CN-NOS
+root@CN-NOS-unknown:~# 
+```
