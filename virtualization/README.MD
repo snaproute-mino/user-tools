@@ -26,7 +26,7 @@ server41@server41:~$
     BOOTSTRAPPER=kubeadm ./provision-vm-cluster.sh
 
 ```
-server41@server41:~$ BOOTSTRAPPER=kubeadm ./provision-vm-cluster.sh 
+server41@server41:~$ DEBUG=true BOOTSTRAPPER=kubeadm ./provision-vm-cluster.sh 
 host info:
     OS: linux
     OS_DISTRIBUTOR: Ubuntu
@@ -174,7 +174,7 @@ kubevirt      virt-handler-t2h5x                 1/1     Running   0          3m
 
 Kubernetes provides a number of options for authenticating users.  This document will provide a simple example of creating serviceaccounts for users.
 
-Generally, it is recommended to deploy an OIDC provider (like coreos/dex) to integrate with your existing authentication infrastructure (such as LDAP).  This is outside the scope of this document.
+Generally, it is recommended to deploy an OIDC provider (like coreos/dex) to integrate with your existing authentication infrastructure (such as LDAP).  This is outside the scope of this document.  Additional info can be found at [[https://kubernetes.io/docs/reference/access-authn-authz/authentication/#users-in-kubernetes]]
 
 1) Create a namespace / service account / rbac role / rbac rolebinding for a new user (run this on the server you provisioned)
 
@@ -339,6 +339,19 @@ helm fetch cnnos-release/cnnos-monolithic --version ${VERSION}
 PULL_SECRET=snaproute-pull-secret
 VERSION=v1.1.0-R15
 helm template --name onie-http-server --set imagePullSecret=${PULL_SECRET} cnnos-monolithic-${VERSION}.tgz | kubectl create -f -
+```
+
+6) Verify the server is running (this may take some time in ContainerCreating as the monolithic image is downloaded)
+
+```
+pferrell@pferrell-lnx:~$ kubectl get pod
+NAME                                                 READY   STATUS    RESTARTS   AGE
+onie-http-server-cnnos-monolithic-75b986b495-zb9hj   1/1     Running   0          10m
+
+pferrell@pferrell-lnx:~$ kubectl get service -o wide
+NAME                                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
+onie-http-server-cnnos-monolithic   ClusterIP   10.41.225.99   <none>        80/TCP    10m   app.kubernetes.io/instance=onie-http-server,app.kubernetes.io/name=cnnos-monolithic
+
 ```
 
 ## Deploy a VM topology referencing the onie-http server / image you deployed
