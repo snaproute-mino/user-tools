@@ -169,3 +169,193 @@ kubevirt      virt-controller-7dc5f5b56d-d4fdx   1/1     Running   0          3m
 kubevirt      virt-controller-7dc5f5b56d-xrhhx   1/1     Running   0          3m5s
 kubevirt      virt-handler-t2h5x                 1/1     Running   0          3m5s
 ```
+
+## Kubernetes cluster access
+
+Kubernetes provides a number of options for authenticating users.  This document will provide a simple example of creating serviceaccounts for users.
+
+Generally, it is recommended to deploy an OIDC provider (like coreos/dex) to integrate with your existing authentication infrastructure (such as LDAP).  This is outside the scope of this document.
+
+1) Create a namespace / service account / rbac role / rbac rolebinding for a new user (run this on the server you provisioned)
+
+USER_EMAIL=john.doe@test
+NAME=${USER_EMAIL//@*/}
+DOMAIN=${USER_EMAIL//*@/}
+cat <<EOL | kubectl apply -f -
+kind: Namespace
+apiVersion: v1
+metadata:
+  name: ${NAME//.}
+---
+kind: ServiceAccount
+apiVersion: v1
+metadata:
+  namespace: ${NAME//.}
+  name: ${NAME}.${DOMAIN}
+---
+kind: Role
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: ${NAME//.}
+  name: ${NAME}.${DOMAIN}
+rules:
+- apiGroups: ["*"]
+  resources: ["*"]
+  verbs: ["*"]
+---
+kind: RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+metadata:
+  namespace: ${NAME//.}
+  name: ${NAME}.${DOMAIN}
+subjects:
+- kind: ServiceAccount
+  name: ${NAME}.${DOMAIN}
+roleRef:
+  kind: Role
+  name: ${NAME}.${DOMAIN}
+  apiGroup: rbac.authorization.k8s.io
+EOL
+
+
+2) Generate a kubeconfig file for the user
+
+USER_EMAIL=john.doe@test
+NAME=${USER_EMAIL//@*/}
+NAMESPACE=${NAME//.}
+DOMAIN=${USER_EMAIL//*@/}
+
+SECRET_NAME=$(kubectl -n ${NAMESPACE} get sa ${NAME}.${DOMAIN} -o jsonpath='{.secrets[0].name}')
+CA_CERT=$( kubectl -n ${NAMESPACE} get secret ${SECRET_NAME} -o jsonpath='{.data.ca\.crt}' )
+SA_TOKEN=$( kubectl -n ${NAMESPACE} get secret ${SECRET_NAME} -o jsonpath='{.data.token}' | base64 -d )
+
+DEFAULT_INTERFACE="$(awk '$2 == 00000000 { print $1 }' /proc/net/route)"
+DEFAULT_INTERFACE_IP=`ip addr show dev "${DEFAULT_INTERFACE}" | awk '$1 == "inet" && $3 == "brd" { sub("/.*", "", $2); print $2 }'`
+DEFAULT_SERVER_PORT=6443
+
+CLUSTER_NAME="cnnos-cluster"
+CLUSTER_SERVER=https://${DEFAULT_INTERFACE_IP}:${DEFAULT_SERVER_PORT}
+CREDENTIALS_NAME=${NAME}.${CLUSTER_NAME}
+CONTEXT_NAME=${CREDENTIALS_NAME}
+
+
+DEFAULT_KUBECONFIG=$(pwd)/kubeconfig
+KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-cluster ${CLUSTER_NAME} --server=${CLUSTER_SERVER} --insecure-skip-tls-verify=true
+
+KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-credentials ${CREDENTIALS_NAME}
+
+KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set users."${CREDENTIALS_NAME}".token "${SA_TOKEN}"
+
+KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-context ${CONTEXT_NAME} \
+        --cluster ${CLUSTER_NAME} \
+        --user ${CREDENTIALS_NAME} \
+        --namespace ${NAMESPACE}
+
+KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config use-context ${CONTEXT_NAME}
+
+3) Copy the generated kubeconfig file to the machine / user home directory that you'd like to use when remotely accessing the cluster
+
+USERNAME=jdoe
+USER_IP=192.168.0.10
+KUBE_DIR=/home/${USERNAME}/.kube/
+ssh ${USERNAME}@${USER_IP} mkdir -p ${KUBE_DIR}
+scp ./kubeconfig ${USERNAME}@${USER_IP}:${KUBE_DIR}/config
+
+
+## Installing user tools to local laptop / server
+
+1) Download the user tools installation script
+
+    curl -Lo user-tools-install.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/master/user-tools-install.sh
+
+
+2) Make the script executable
+    chmod +x user-tools-install.sh
+
+3) Run the user tools installation
+    ./user-tools-install.sh
+
+4) Verify you can access the cluster using kubectl and the kubeconfig you generated
+
+kubectl get sa
+
+
+## Request an account for access to CN-NOS release images
+
+1) Contact your sales representation or email info@snaproute.com to request an account
+
+2) Create an image pull secret for the account provided in step 1 (this should be created in the namespace that you'll be deploying cnnos-topologies)
+
+kubectl create secret docker-registry snaproute-pull-secret \
+--docker-server=repo.snaproute.com \
+--docker-username=john.doe@customer.local \
+--docker-email=john.doe@customer.local \
+--docker-password=PasswordProvided
+
+
+## Deploying an onie-http server for hosting cn-nos monolithic image to ONIE VMs
+
+1) Add the cn-nos release repo
+
+helm repo add cnnos-release --username="john.doe@customer.local" --password="PasswordProvided" https://repo.snaproute.com/chartrepo/release
+
+2) Perform a repo update to ensure you have access to the latest charts
+
+helm repo update
+
+3) List the available monolithic releases
+helm search cnnos-release/cnnos-monolithic --versions
+
+4) Download the desired version chart
+
+VERSION=v1.1.0-R15
+helm fetch cnnos-release/cnnos-monolithic --version ${VERSION}
+
+5) Deploy an onie-http server instance to host the desired CN-NOS monolithic image (referencing the imagePullSecret created earlier)
+
+PULL_SECRET=snaproute-pull-secret
+VERSION=v1.1.0-R15
+helm template --name onie-http-server --set imagePullSecret="${PULL_SECRET} cnnos-monolithic-${VERSION}.tgz | kubectl create -f -
+
+
+## Deploy a VM topology referencing the onie-http server / image you deployed
+
+1) Add the cnnos-virtualization repo
+
+helm repo add cnnos-virtualization https://repo.snaproute.com/chartrepo/virtualization
+
+
+2) Perform a repo update to ensure you have access to the latest charts
+
+helm repo update
+
+
+3) List the available monolithic releases
+
+helm search cnnos-virtualization
+
+
+4) Download the desired version chart
+
+TOPOLOGY=node2node
+VERSION=v1.0.0
+helm fetch cnnos-virtualization/${TOPOLOGY} --version ${VERSION}
+
+
+5) Deploy the chart referencing the service IP of the onie-http-server you deployed (CHART_FILE should reference the location where you fetched it in previous step)
+
+TOPOLOGY=node2node
+VERSION=v1.0.0
+CHART_FILE=${TOPOLOGY}-${VERSION}.tgz
+TOPOLOGY_NAME=my-topology
+CLUSTER_IP=$(kubectl get service onie-http-server-cnnos-monolithic -o jsonpath="{.spec.clusterIP}")
+
+helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/onie-installer-x86-64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
+
+6) Verify the VMs are deployed
+
+kubectl get vm
+
+kubectl get vmi
+
+kubectl get pod
