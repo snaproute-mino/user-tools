@@ -755,6 +755,12 @@ function kubeadm_bootstrap {
 function kubeadm_dependencies {
     echo "installing/downloading kubeadm dependencies"
 
+    which kvm-ok &> /dev/null
+    RT=$?
+    if [[ "${RT}" != "0" || -n ${FULL_INSTALL} ]]; then
+        sudo apt-get update -qy &> ${REDIR}
+        sudo apt-get install -qy cpu-checker &> ${REDIR}
+    fi
     kvm-ok &> /dev/null
     RT=$?
     if [[ "${RT}" != "0" || -n ${FULL_INSTALL} ]]; then
