@@ -3065,11 +3065,7 @@ function main {
 
     bootstrapper_info
 
-    if [[ ${ENABLE_OIDC} ]]; then
-        echo "bootstrapping with ${BOOTSTRAPPER} on ${OS} with OIDC enabled"
-    else
-        echo "bootstrapping with ${BOOTSTRAPPER} on ${OS} with OIDC disabled"
-    fi
+    echo "bootstrapping with ${BOOTSTRAPPER} on ${OS}"
 
     if [[ "${allow_install}" == "false" ]]; then
         echo -n "Proceed with installation/provisioning? [yes or no]: "
