@@ -251,6 +251,8 @@ function __set_ha_defaults {
 
     if [[ "${HA_CONTROLPLANE_NODES:-}" != "" ]]; then
         ENABLE_HA=true
+    else
+        HA_CONTROLPLANE_NODES=""
     fi
     if [[ "${HA_HEARTBEAT_AUTH_MD5SUM:-}" == "" ]]; then
         HA_HEARTBEAT_AUTH_MD5SUM=${DEFAULT_HA_HEARTBEAT_AUTH_MD5SUM}
