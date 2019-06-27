@@ -29,7 +29,8 @@ function __set_variables {
 function sudocmd {
     CMD="$@"
     CMD=$( eval "echo -e \"${CMD//\"/\\\"}\"" )
-    echo "$(sudo bash -c \"${CMD}\")" &> ${REDIR}
+    local OUTPUT=$(sudo bash -c ${CMD})
+    echo "${OUTPUT}" &> ${REDIR}
 }
 
 ### BOOTSTRAPPER CONFIGURATION
