@@ -139,7 +139,7 @@ EOL
 ### darwin dependencies
 
 function darwin_homebrew_install {
-    if [[ ! -f $(which brew || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which brew || true) || "${FULL_INSTALL}" == "false" ]]; then
         echo "Installing homebrew"
         /usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
     fi
@@ -147,7 +147,7 @@ function darwin_homebrew_install {
 }
 
 function darwin_virtualbox_install {
-    if [[ ! -f $(which vboxmanage || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which vboxmanage || true) || "${FULL_INSTALL}" == "false" ]]; then
         echo "Install virtualbox (may require approving permissions for kernel extensions)"
         brew cask install virtualbox
     fi
@@ -597,9 +597,9 @@ function minikube_dependencies_linux {
 }
 
 function minikube_linux_machine_driver {
-    if [[ ! -f $(which docker-machine-driver-kvm2 || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which docker-machine-driver-kvm2 || true) || "${FULL_INSTALL}" == "false" ]]; then
         echo "Installing kvm2 machine driver for minikube"
-        curl -Lof docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 &> ${REDIR}
+        curl -fLo docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 &> ${REDIR}
         sudocmd install $(pwd)/docker-machine-driver-kvm2 /usr/local/bin/
         rm ./docker-machine-driver-kvm2 &> ${REDIR} || true
     fi
@@ -612,7 +612,7 @@ function minikube_dependencies_darwin {
 
 function minikube_download {
     echo "Downloading minikube"
-    curl -Lof minikube https://storage.googleapis.com/minikube/releases/latest/minikube-${OS}-amd64 &> ${REDIR}
+    curl -fLo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-${OS}-amd64 &> ${REDIR}
     sudocmd install $(pwd)/minikube /usr/local/bin/
     rm $(pwd)/minikube &> ${REDIR} || true
 }
@@ -764,7 +764,7 @@ function kubeadm_bootstrap {
 function kubeadm_dependencies {
     echo "installing/downloading kubeadm dependencies"
 
-    if [[ ! -f $(which kvm-ok || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which kvm-ok || true) || "${FULL_INSTALL}" == "false" ]]; then
         sudocmd apt-get -qy update
         sudocmd apt-get -qy install cpu-checker
     fi
@@ -772,11 +772,11 @@ function kubeadm_dependencies {
     kvm-ok &> /dev/null
     RT=$?
     set -e
-    if [[ "${RT}" != "0" || -n ${FULL_INSTALL} ]]; then
+    if [[ "${RT}" != "0" || "${FULL_INSTALL}" == "false" ]]; then
         linux_kvm2_install
     fi
 
-    if [[ ! -f $(which docker || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which docker || true) || "${FULL_INSTALL}" == "false" ]]; then
         linux_docker_install
     fi
     
@@ -786,18 +786,18 @@ function kubeadm_dependencies {
 }
 
 function kubectl_download {
-    if [[ ! -f $(which kubectl || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which kubectl || true) || "${FULL_INSTALL}" == "false" ]]; then
         echo "Installing kubectl"
-        curl -Lof kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubectl &> ${REDIR}
+        curl -fLo kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubectl &> ${REDIR}
         sudocmd install $(pwd)/kubectl /usr/local/bin/
         rm $(pwd)/kubectl &> ${REDIR} || true
     fi
 }
 
 function kubeadm_download {
-    if [[ ! -f $(which kubeadm || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which kubeadm || true) || "${FULL_INSTALL}" == "false" ]]; then
         echo "Installing kubeadm"
-        curl -Lof kubeadm https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubeadm &> ${REDIR}
+        curl -fLo kubeadm https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubeadm &> ${REDIR}
         sudocmd install $(pwd)/kubeadm /usr/local/bin/
         rm $(pwd)/kubeadm &> ${REDIR} || true
     fi
@@ -1777,7 +1777,7 @@ function helm_bootstrap {
 }
 
 function helm_dependencies {
-    if [[ ! -f $(which helm || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which helm || true) || "${FULL_INSTALL}" == "false" ]]; then
         echo "Installing helm"
         curl https://raw.githubusercontent.com/helm/helm/master/scripts/get > get_helm.sh 2> /dev/null && \
             chmod 700 get_helm.sh && \
@@ -1864,9 +1864,9 @@ function kubevirt_bootstrap {
 }
 
 function kubevirt_dependencies {
-    if [[ ! -f $(which virtctl || true) || -n ${FULL_INSTALL} ]]; then
+    if [[ ! -f $(which virtctl || true) || "${FULL_INSTALL}" == "false" ]]; then
         echo "Installing virtctl"
-        curl -Lof virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VIRTCTL_VERSION}/virtctl-${KUBEVIRT_VIRTCTL_VERSION}-${OS}-amd64 &> ${REDIR}
+        curl -fLo virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VIRTCTL_VERSION}/virtctl-${KUBEVIRT_VIRTCTL_VERSION}-${OS}-amd64 &> ${REDIR}
         sudocmd install $(pwd)/virtctl /usr/local/bin/
         rm $(pwd)/virtctl &> ${REDIR} || true
     fi
@@ -3108,7 +3108,7 @@ function main {
 
     if [[ "${DEBUG}" == "true" ]]; then
         set -x
-        REDIR="/dev/stderr"
+        REDIR="/dev/null"
     else
         unset DEBUG
         REDIR="/dev/null"
