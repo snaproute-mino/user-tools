@@ -3095,7 +3095,7 @@ function main {
 
     if [[ "${DEBUG}" == "true" ]]; then
         set -x
-        REDIR="/dev/stderr"
+        REDIR="1>&2"
     else
         unset DEBUG
         REDIR="/dev/null"
