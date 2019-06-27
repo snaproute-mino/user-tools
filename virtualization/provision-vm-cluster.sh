@@ -830,7 +830,9 @@ function kubelet_init {
 
 function kubeadm_files {
     echo "Populating additional files"
-    mkdir -p ${ADDITIONAL_FILES_PATH_PREPEND} &> ${REDIR} && true
+    if [[ "${ADDITIONAL_FILES_PATH_PREPEND}" != "" ]]; then
+        mkdir -p ${ADDITIONAL_FILES_PATH_PREPEND} &> ${REDIR} && true
+    fi
 }
 
 function kubeadm_init {
