@@ -26,6 +26,12 @@ function __set_variables {
     __set_helm_defaults
 }
 
+function sudocmd {
+    CMD="$@"
+    CMD=$( eval "echo -e \"${CMD//\"/\\\"}\"" )
+    echo "$(sudo bash -c \"${CMD}\")" &> ${REDIR}
+}
+
 ### BOOTSTRAPPER CONFIGURATION
 
 IFS='' read -r -d '\0' BOOTSTRAPPER_HELP <<"EOL"
@@ -81,37 +87,39 @@ function __set_bootstrapper_defaults {
 
 function linux_kvm2_install {
     echo "Installing kvm2"
-    sudo DEBIAN_FRONTEND=noninteractive \
-        apt-get -yq install qemu-kvm libvirt-bin virtinst &> ${REDIR}
+    sudocmd DEBIAN_FRONTEND=noninteractive \
+        apt-get -yq install qemu-kvm libvirt-bin virtinst
     
-    sudo systemctl enable libvirtd.service
-    sudo systemctl start libvirtd.service
-    sudo groupadd libvirt &> ${REDIR} || true
-    sudo usermod -a -G libvirt $(whoami)
+    sudocmd systemctl enable libvirtd.service
+    sudocmd systemctl start libvirtd.service
+    set +e
+    sudocmd groupadd libvirt
+    set -e
+    sudocmd usermod -a -G libvirt $(whoami)
 
     linux_kvm2_enable_nested_virtualization
 }
 
 function linux_kvm2_enable_nested_virtualization {
     echo "Enabling nested virtualization in kvm2"
-    sudo modprobe -r kvm_intel &> ${REDIR}
-    sudo sed -i 's/#options kvm_intel nested=1/options kvm_intel nested=1/' /etc/modprobe.d/qemu-system-x86.conf
-    sudo modprobe kvm_intel &> ${REDIR}
+    sudocmd modprobe -r kvm_intel
+    sudocmd sed -i 's/#options kvm_intel nested=1/options kvm_intel nested=1/' /etc/modprobe.d/qemu-system-x86.conf
+    sudocmd modprobe kvm_intel
 }
 
 function linux_docker_install {
     echo "Installing docker"
 
-    sudo mkdir -p ${ADDITIONAL_FILES_PATH_PREPEND}/etc/docker/ || true
-    sudo systemctl stop docker.service &> ${REDIR}
+    sudocmd mkdir -p ${ADDITIONAL_FILES_PATH_PREPEND}/etc/docker/ || true
+    sudocmd systemctl stop docker.service
     echo -e "${DOCKER_CONF}" | sudo tee ${ADDITIONAL_FILES_PATH_PREPEND}/etc/docker/daemon.json > /dev/null
-    sudo DEBIAN_FRONTEND=noninteractive \
-        apt-get -yq install docker.io &> ${REDIR}
+    sudocmd DEBIAN_FRONTEND=noninteractive \
+        apt-get -yq install docker.io
 
-    sudo systemctl enable docker.service &> ${REDIR}
-    sudo systemctl start docker.service &> ${REDIR}
-    sudo groupadd docker &> ${REDIR} || true
-    sudo usermod -aG docker $(whoami) &> ${REDIR} || true
+    sudocmd systemctl enable docker.service
+    sudocmd systemctl start docker.service
+    sudocmd groupadd docker || true
+    sudocmd usermod -aG docker $(whoami) || true
 }
 
 IFS='' read -r -d '\0' DOCKER_CONF <<"EOL"
@@ -290,19 +298,17 @@ function ha_heartbeat_install {
     OUTPUT=$(egrep "net.ipv4.ip_nonlocal_bind=1" /etc/sysctl.d/ha.conf || true)
     if [[ $? -ne 0 ]]; then
         echo "net.ipv4.ip_nonlocal_bind=1" | \
-            sudo tee -a /etc/sysctl.d/ha.conf &> ${REDIR}
+            sudo tee -a /etc/sysctl.d/ha.conf &> /dev/null
     fi
   
-    sudo sysctl -p &> ${REDIR}
+    sudocmd sysctl -p
   
-    sudo apt-get -yq update &> ${REDIR}
-    sudo apt-get -yq install \
-        heartbeat \
-    &> ${REDIR}
+    sudocmd apt-get -yq update
+    sudocmd apt-get -yq install heartbeat
 
     echo -e "auth 1\n1 md5 ${HEARTBEAT_AUTH_MD5SUM}" | \
-        sudo tee /etc/ha.d/authkeys &> ${REDIR}
-    sudo chmod 600 /etc/ha.d/authkeys &> ${REDIR}
+        sudo tee /etc/ha.d/authkeys &> /dev/null
+    sudocmd chmod 600 /etc/ha.d/authkeys
 
     HEARTBEAT_NODES_CONF=""
     HEARTBEAT_LEADER=""
@@ -313,14 +319,14 @@ function ha_heartbeat_install {
         HEARTBEAT_NODES_CONF="${HEARTBEAT_NODES_CONF}node    ${node}\n"
     done
 
-    sudo mkdir -p /etc/ha.d/ &> ${REDIR}
+    sudocmd mkdir -p /etc/ha.d/
     eval "echo -e \"${HA_CONF}\"" \
-        | sudo tee /etc/ha.d/ha.cf &> ${REDIR}
+        | sudo tee /etc/ha.d/ha.cf &> /dev/null
 
     echo -e "${HEARTBEAT_LEADER} ${LB_IP}\n" \
-        | sudo tee /etc/ha.d/haresources &> ${REDIR}
+        | sudo tee /etc/ha.d/haresources &> /dev/null
 
-    sudo systemctl restart heartbeat &> ${REDIR}
+    sudocmd systemctl restart heartbeat
 }
 
 IFS='' read -r -d '\0' HA_CONF <<"EOL"
@@ -351,21 +357,20 @@ EOL
 
 function ha_haproxy_install {
     echo "Installing haproxy for kubernetes apiserver load-balancing"
-    sudo apt-get -yq update &> ${REDIR}
-    sudo apt-get -yq install \
-        haproxy \
-    &> ${REDIR}
+    sudocmd apt-get -yq update
+    sudocmd apt-get -yq install haproxy
+
     HAPROXY_NODES_CONF=""
     for node in ${KUBERNETES_MASTER_NODES}; do
         node_ip=$(getent hosts $node | awk '{print $1}')
         HAPROXY_NODES_CONF="${HAPROXY_NODES_CONF}\n  server ${node} ${node_ip}:${KUBERNETES_APISERVER_LOCAL_BIND_PORT} check check-ssl verify none"
     done
 
-    sudo mkdir -p /etc/haproxy/ &> ${REDIR}
+    sudocmd mkdir -p /etc/haproxy/
     eval "echo -e \"${HAPROXY_CONF}\"" \
-        | sudo tee /etc/haproxy/haproxy.cfg &> ${REDIR}
+        | sudo tee /etc/haproxy/haproxy.cfg &> /dev/null
 
-    sudo systemctl restart haproxy &> ${REDIR}
+    sudocmd systemctl restart haproxy
 }
 
 IFS='' read -r -d '\0' HAPROXY_CONF <<"EOL"
@@ -592,8 +597,8 @@ function minikube_dependencies_linux {
 function minikube_linux_machine_driver {
     if [[ ! -f $(which docker-machine-driver-kvm2 || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kvm2 machine driver for minikube"
-        curl -Lo docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 &> ${REDIR} && \
-            sudo install ./docker-machine-driver-kvm2 /usr/local/bin/
+        curl -Lo docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 &> ${REDIR}
+        sudocmd install $(pwd)/docker-machine-driver-kvm2 /usr/local/bin/
         rm ./docker-machine-driver-kvm2 &> ${REDIR} || true
     fi
 }
@@ -605,9 +610,9 @@ function minikube_dependencies_darwin {
 
 function minikube_download {
     echo "Downloading minikube"
-    curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-${OS}-amd64 &> ${REDIR} && \
-        sudo install ./minikube /usr/local/bin/
-        rm ./minikube &> ${REDIR} || true
+    curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-${OS}-amd64 &> ${REDIR}
+    sudocmd install $(pwd)/minikube /usr/local/bin/
+    rm $(pwd)/minikube &> ${REDIR} || true
 }
 
 function minikube_vmdriver {
@@ -756,8 +761,8 @@ function kubeadm_dependencies {
     echo "installing/downloading kubeadm dependencies"
 
     if [[ ! -f $(which kvm-ok || true) || -n ${FULL_INSTALL} ]]; then
-        sudo bash -c "apt-get update -qy" &> ${REDIR} && \
-        sudo bash -c "apt-get install -qy cpu-checker" &> ${REDIR}
+        sudocmd apt-get -qy update
+        sudocmd apt-get -qy install cpu-checker
     fi
     set +e
     kvm-ok &> /dev/null
@@ -779,18 +784,18 @@ function kubeadm_dependencies {
 function kubectl_download {
     if [[ ! -f $(which kubectl || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kubectl"
-        curl -Lo kubectl curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubectl &> ${REDIR} && \
-            sudo bash -c "install $(pwd)/kubectl /usr/local/bin/" &> ${REDIR}
-        rm ./kubectl &> ${REDIR} || true
+        curl -Lo kubectl curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubectl &> ${REDIR}
+        sudocmd install $(pwd)/kubectl /usr/local/bin/
+        rm $(pwd)/kubectl &> ${REDIR} || true
     fi
 }
 
 function kubeadm_download {
     if [[ ! -f $(which kubeadm || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kubeadm"
-        curl -Lo kubeadm https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubeadm &> ${REDIR} && \
-            sudo install ./kubeadm /usr/local/bin/ &> ${REDIR}
-        rm ./kubeadm &> ${REDIR} || true
+        curl -Lo kubeadm https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubeadm &> ${REDIR}
+        sudocmd install $(pwd)/kubeadm /usr/local/bin/ &> ${REDIR}
+        rm $(pwd)/kubeadm &> ${REDIR} || true
     fi
 }
 
@@ -798,7 +803,7 @@ function kubelet_init {
     local output=$(egrep "br_netfilter" /etc/modules-load.d/modules.conf)
     if [[ $? -ne 0 ]]; then
         echo "br_netfilter" | sudo tee -a /etc/modules-load.d/modules.conf
-        modprobe br_netfilter &> ${REDIR}
+        sudocmd modprobe br_netfilter
     fi
 
     local output=$(egrep "net.bridge.bridge-nf-call-ip6tables = 1" /etc/sysctl.d/k8s.conf)
@@ -810,13 +815,13 @@ function kubelet_init {
         echo "net.bridge.bridge-nf-call-iptables = 1" | sudo tee -a /etc/sysctl.d/k8s.conf &> ${REDIR}
     fi
     
-    sudo sysctl -p &> ${REDIR}
+    sudocmd sysctl -p
 
     KVERSION=${KUBERNETES_VERSION//v/}-00
-    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - &> ${REDIR} && \
-        echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list &> ${REDIR} && \
-        sudo apt-get update -q &> ${REDIR} && \
-        sudo apt-get install -qy kubelet=$KVERSION kubectl=$KVERSION kubeadm=$KVERSION --allow-downgrades &> ${REDIR}
+    curl -s https://packages.cloud.google.com/apt/doc/apt-key.gpg | sudo apt-key add - &> /dev/null
+    echo "deb http://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list &> /dev/null
+    sudocmd apt-get -yq update
+    sudocmd apt-get -yq install kubelet=$KVERSION kubectl=$KVERSION kubeadm=$KVERSION --allow-downgrades
 }
 
 function kubeadm_files {
@@ -826,7 +831,7 @@ function kubeadm_files {
 
 function kubeadm_init {
     echo "Running kubeadm initialization"
-    sudo kubeadm reset --force &> ${REDIR} || true
+    sudocmd kubeadm reset --force || true
     KUBERNETES_OIDC_CONF=$( eval "echo -e \"${KUBERNETES_OIDC_CONF//\"/\\\"}\"" )
     if [[ "${KUBERNETES_OIDC_CLIENT_ID}" == "" ]]; then
         KUBERNETES_OIDC_CONF=""
@@ -849,8 +854,8 @@ function kubeadm_init {
 
     rm ./kubeadm.yaml &> ${REDIR} || true
     mkdir -p ${HOME}/.kube &> ${REDIR}
-    sudo cp /etc/kubernetes/admin.conf ${HOME}/.kube/config &> ${REDIR}
-    sudo chown $(id -u):$(id -g) ${HOME}/.kube/config &> ${REDIR}
+    sudocmd cp /etc/kubernetes/admin.conf ${HOME}/.kube/config
+    sudocmd chown $(id -u):$(id -g) ${HOME}/.kube/config
 }
 
 
@@ -1780,7 +1785,7 @@ function helm_deploy {
     kubectl --namespace kube-system create serviceaccount tiller &> ${REDIR}
     kubectl create clusterrolebinding tiller --clusterrole cluster-admin --serviceaccount=kube-system:tiller &> ${REDIR}
     helm init --service-account tiller --upgrade --wait &> ${REDIR}
-    sudo chown -R $(id -u):$(id -g) ${HOME}/.helm/ &> ${REDIR}
+    sudocmd chown -R $(id -u):$(id -g) ${HOME}/.helm/
     helm repo update &> ${REDIR}
 }
 
@@ -1855,9 +1860,9 @@ function kubevirt_bootstrap {
 function kubevirt_dependencies {
     if [[ ! -f $(which virtctl || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing virtctl"
-        curl -Lo virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VIRTCTL_VERSION}/virtctl-${KUBEVIRT_VIRTCTL_VERSION}-${OS}-amd64 &> ${REDIR} && \
-            sudo install ./virtctl /usr/local/bin/
-            rm ./virtctl &> ${REDIR} || true
+        curl -Lo virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VIRTCTL_VERSION}/virtctl-${KUBEVIRT_VIRTCTL_VERSION}-${OS}-amd64 &> ${REDIR}
+        sudocmd install $(pwd)/virtctl /usr/local/bin/
+        rm $(pwd)/virtctl &> ${REDIR} || true
     fi
 }
 
@@ -2998,7 +3003,7 @@ function bootstrap {
     sudo mkdir -p /usr/local/bin &> /dev/null || true
 
     if [[ "${OS}" == "linux" ]]; then
-        sudo apt-get -yq update &> /dev/null
+        sudocmd apt-get -yq update
     fi
 
     ha_bootstrap
