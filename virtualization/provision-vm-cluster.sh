@@ -11,6 +11,9 @@ function __set_variables {
     DEFAULT_INTERFACE="$(awk '$2 == 00000000 { print $1 }' /proc/net/route)"
     DEFAULT_INTERFACE_IP=`ip addr show dev "${DEFAULT_INTERFACE}" | awk '$1 == "inet" && $3 == "brd" { sub("/.*", "", $2); print $2 }'`
     ADDITIONAL_FILES_PATH_PREPEND=""
+    if [[ "${FULL_INSTALL:-}" == "" ]]; then
+        FULL_INSTALL=false
+    fi
 
     __set_bootstrapper_defaults
     __set_minikube_defaults
@@ -58,16 +61,16 @@ function __set_bootstrapper_defaults {
     local DEFAULT_BOOTSTRAPPER_DOCKER_REGISTRY=repo.snaproute.com
     local DEFAULT_DEPENDENCIES_ONLY=false
 
-    if [[ -z "${DEBUG}" ]]; then
+    if [[ "${DEBUG:-}" == "" ]]; then
         DEBUG=${DEFAULT_DEBUG}
     fi
-    if [[ -z "${BOOTSTRAPPER}" ]]; then
+    if [[ "${BOOTSTRAPPER:-}" == "" ]]; then
         BOOTSTRAPPER=${DEFAULT_BOOTSTRAPPER}
     fi
-    if [[ -z "${BOOTSTRAPPER_DOCKER_REGISTRY}" ]]; then
+    if [[ "${BOOTSTRAPPER_DOCKER_REGISTRY:-}" == "" ]]; then
         BOOTSTRAPPER_DOCKER_REGISTRY=${DEFAULT_BOOTSTRAPPER_DOCKER_REGISTRY}
     fi
-    if [[ -z "${DEPENDENCIES_ONLY}" ]]; then
+    if [[ "${DEPENDENCIES_ONLY:-}" == "" ]]; then
         DEPENDENCIES_ONLY=${DEFAULT_DEPENDENCIES_ONLY}
     fi
 
@@ -184,10 +187,10 @@ EOL
 function __set_cluster_defaults {
     local DEFAULT_CLUSTER_CONTROLPLANE_ENDPOINT="${DEFAULT_INTERFACE_IP}:6443"
     local DEFAULT_CLUSTER_ID=${DEFAULT_INTERFACE_IP##*.}
-    if [[ -z "${CLUSTER_CONTROLPLANE_ENDPOINT}" ]]; then
+    if [[ "${CLUSTER_CONTROLPLANE_ENDPOINT:-}" == "" ]]; then
         CLUSTER_CONTROLPLANE_ENDPOINT=${DEFAULT_CLUSTER_CONTROLPLANE_ENDPOINT}
     fi
-    if [[ -z "${CLUSTER_ID}" ]]; then
+    if [[ "${CLUSTER_ID:-}" == "" ]]; then
         CLUSTER_ID=${DEFAULT_CLUSTER_ID}
     fi
     local DEFAULT_CLUSTER_LB_VM_CIDR=10.${CLUSTER_ID}.0.0/18
@@ -196,16 +199,16 @@ function __set_cluster_defaults {
     local DEFAULT_CLUSTER_SERVICE_CIDR=10.${CLUSTER_ID}.192.0/18
 
 
-    if [[ -z "${CLUSTER_LB_VM_CIDR}" ]]; then
+    if [[ "${CLUSTER_LB_VM_CIDR:-}" == "" ]]; then
         CLUSTER_LB_VM_CIDR=${DEFAULT_CLUSTER_LB_VM_CIDR}
     fi
-    if [[ -z "${CLUSTER_LB_DEFAULT_CIDR}" ]]; then
+    if [[ "${CLUSTER_LB_DEFAULT_CIDR:-}" == "" ]]; then
         CLUSTER_LB_DEFAULT_CIDR=${DEFAULT_CLUSTER_LB_DEFAULT_CIDR}
     fi
-    if [[ -z "${CLUSTER_POD_CIDR}" ]]; then
+    if [[ "${CLUSTER_POD_CIDR:-}" == "" ]]; then
         CLUSTER_POD_CIDR=${DEFAULT_CLUSTER_POD_CIDR}
     fi
-    if [[ -z "${CLUSTER_SERVICE_CIDR}" ]]; then
+    if [[ "${CLUSTER_SERVICE_CIDR:-}" == "" ]]; then
         CLUSTER_SERVICE_CIDR=${DEFAULT_CLUSTER_SERVICE_CIDR}
     fi
     DEFAULTS_CLUSTER=$( eval "echo -e \"${CLUSTER_HELP//\"/\\\"}\"" )
@@ -246,16 +249,16 @@ function __set_ha_defaults {
     local DEFAULT_HA_HEARTBEAT_MCAST_GROUP="225.0.0.1"
     local DEFAULT_HA_HEARTBEAT_UDP_PORT="694"
 
-    if [[ -n "${HA_CONTROLPLANE_NODES}" ]]; then
+    if [[ "${HA_CONTROLPLANE_NODES:-}" != "" ]]; then
         ENABLE_HA=true
     fi
-    if [[ -z "${HA_HEARTBEAT_AUTH_MD5SUM}" ]]; then
+    if [[ "${HA_HEARTBEAT_AUTH_MD5SUM:-}" == "" ]]; then
         HA_HEARTBEAT_AUTH_MD5SUM=${DEFAULT_HA_HEARTBEAT_AUTH_MD5SUM}
     fi
-    if [[ -z "${HA_HEARTBEAT_MCAST_GROUP}" ]]; then
+    if [[ "${HA_HEARTBEAT_MCAST_GROUP:-}" == "" ]]; then
         HA_HEARTBEAT_MCAST_GROUP=${DEFAULT_HA_HEARTBEAT_MCAST_GROUP}
     fi
-    if [[ -z "${HA_HEARTBEAT_UDP_PORT}" ]]; then
+    if [[ "${HA_HEARTBEAT_UDP_PORT:-}" == "" ]]; then
         HA_HEARTBEAT_UDP_PORT=${DEFAULT_HA_HEARTBEAT_UDP_PORT}
     fi
 
@@ -453,13 +456,13 @@ function __set_kubernetes_defaults {
     
     local DEFAULT_KUBERNETES_OIDC_ISSUER_URL=https://accounts.google.com
 
-    if [[ -z "${KUBERNETES_VERSION}" ]]; then
+    if [[ -z "${KUBERNETES_VERSION:-}" == "" ]]; then
         KUBERNETES_VERSION=${DEFAULT_KUBERNETES_VERSION}
     fi
-    if [[ -z "${KUBERNETES_IMAGE_REPOSITORY}" ]]; then
+    if [[ -z "${KUBERNETES_IMAGE_REPOSITORY:-}" == "" ]]; then
         KUBERNETES_IMAGE_REPOSITORY=${DEFAULT_KUBERNETES_IMAGE_REPOSITORY}
     fi
-    if [[ -z "${KUBERNETES_CONTROLPLANE_ENDPOINT}" ]]; then
+    if [[ -z "${KUBERNETES_CONTROLPLANE_ENDPOINT:-}" == "" ]]; then
         KUBERNETES_CONTROLPLANE_ENDPOINT=${DEFAULT_KUBERNETES_CONTROLPLANE_ENDPOINT}
     fi
 
@@ -467,21 +470,21 @@ function __set_kubernetes_defaults {
     KUBERNETES_CONTROLPLANE_BIND_PORT="${KUBERNETES_CONTROLPLANE_ENDPOINT//*:/}"
 
     local DEFAULT_KUBERNETES_APISERVER_LOCAL_BIND_PORT="${KUBERNETES_CONTROLPLANE_BIND_PORT}"
-    if [[ "${HA_CONTROLPLANE_NODES}" != "" ]]; then
+    if [[ "${HA_CONTROLPLANE_NODES:-}" != "" ]]; then
         DEFAULT_KUBERNETES_APISERVER_LOCAL_BIND_PORT="16443"
     fi
 
-    if [[ -z "${KUBERNETES_APISERVER_LOCAL_BIND_PORT}" ]]; then
+    if [[ "${KUBERNETES_APISERVER_LOCAL_BIND_PORT:-}" == "" ]]; then
         KUBERNETES_APISERVER_LOCAL_BIND_PORT=${DEFAULT_KUBERNETES_APISERVER_LOCAL_BIND_PORT}
     fi
 
-    if [[ -z "${KUBERNETES_POD_CIDR}" ]]; then
+    if [[ "${KUBERNETES_POD_CIDR:-}" == "" ]]; then
         KUBERNETES_POD_CIDR=${CLUSTER_POD_CIDR}
     fi
-    if [[ -z "${KUBERNETES_SERVICE_CIDR}" ]]; then
+    if [[ "${KUBERNETES_SERVICE_CIDR:-}" == "" ]]; then
         KUBERNETES_SERVICE_CIDR=${CLUSTER_SERVICE_CIDR}
     fi
-    if [[ -z "${KUBERNETES_OIDC_ISSUER_URL}" ]]; then
+    if [[ "${KUBERNETES_OIDC_ISSUER_URL:-}" == "" ]]; then
         KUBERNETES_OIDC_ISSUER_URL=${DEFAULT_KUBERNETES_OIDC_ISSUER_URL}
     fi
 
@@ -539,16 +542,16 @@ function __set_minikube_defaults {
         local DEFAULT_MINIKUBE_VM_DRIVER=virtualbox
     fi
 
-    if [[ -z "${MINIKUBE_CPUS}" ]]; then
+    if [[ "${MINIKUBE_CPUS:-}" == "" ]]; then
         MINIKUBE_CPUS=${DEFAULT_MINIKUBE_CPUS}
     fi
-    if [[ -z "${MINIKUBE_MEMORY}" ]]; then
+    if [[ "${MINIKUBE_MEMORY:-}" == "" ]]; then
         MINIKUBE_MEMORY=${DEFAULT_MINIKUBE_MEMORY}
     fi
-    if [[ -z "${MINIKUBE_DISK_SIZE}" ]]; then
+    if [[ "${MINIKUBE_DISK_SIZE:-}" == "" ]]; then
         MINIKUBE_DISK_SIZE=${DEFAULT_MINIKUBE_DISK_SIZE}
     fi
-    if [[ -z "${MINIKUBE_VM_DRIVER}" ]]; then
+    if [[ "${MINIKUBE_VM_DRIVER:-}" == "" ]]; then
         MINIKUBE_VM_DRIVER=${DEFAULT_MINIKUBE_VM_DRIVER}
     fi
 }
@@ -960,22 +963,22 @@ function __set_cni_defaults {
     local DEFAULT_CNI_FLANNEL_VERSION=v0.11.0
     local DEFAULT_CNI_FLANNEL_IMAGE_REPOSITORY=${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/quay.io/coreos
 
-    if [[ -z "${CNI_PLUGINS_VERSION}" ]]; then
+    if [[ "${CNI_PLUGINS_VERSION:-}" == "" ]]; then
         CNI_PLUGINS_VERSION=${DEFAULT_CNI_PLUGINS_VERSION}
     fi
-    if [[ -z "${CNI_PLUGINS_IMAGE_REPOSITORY}" ]]; then
+    if [[ "${CNI_PLUGINS_IMAGE_REPOSITORY:-}" == "" ]]; then
         CNI_PLUGINS_IMAGE_REPOSITORY=${DEFAULT_CNI_PLUGINS_IMAGE_REPOSITORY}
     fi
-    if [[ -z "${CNI_MULTUS_VERSION}" ]]; then
+    if [[ "${CNI_MULTUS_VERSION:-}" == "" ]]; then
         CNI_MULTUS_VERSION=${DEFAULT_CNI_MULTUS_VERSION}
     fi
-    if [[ -z "${CNI_MULTUS_IMAGE_REPOSITORY}" ]]; then
+    if [[ "${CNI_MULTUS_IMAGE_REPOSITORY:-}" == "" ]]; then
         CNI_MULTUS_IMAGE_REPOSITORY=${DEFAULT_CNI_MULTUS_IMAGE_REPOSITORY}
     fi
-    if [[ -z "${CNI_FLANNEL_VERSION}" ]]; then
+    if [[ "${CNI_FLANNEL_VERSION:-}" == "" ]]; then
         CNI_FLANNEL_VERSION=${DEFAULT_CNI_FLANNEL_VERSION}
     fi
-    if [[ -z "${CNI_FLANNEL_IMAGE_REPOSITORY}" ]]; then
+    if [[ "${CNI_FLANNEL_IMAGE_REPOSITORY:-}" == "" ]]; then
         CNI_FLANNEL_IMAGE_REPOSITORY=${DEFAULT_CNI_FLANNEL_IMAGE_REPOSITORY}
     fi
 
@@ -1734,7 +1737,7 @@ EOL
 function __set_helm_defaults {
     local DEFAULT_HELM_VERSION=v2.11.0
 
-    if [[ -z "${HELM_VERSION}" ]]; then
+    if [[ "${HELM_VERSION:-}" == "" ]]; then
         HELM_VERSION=${DEFAULT_HELM_VERSION}
     fi
 
@@ -1803,22 +1806,22 @@ function __set_kubevirt_defaults {
     local DEFAULT_KUBEVIRT_IMAGE_REPOSITORY=${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/kubevirt
     local DEFAULT_KUBEVIRT_VERSION=v0.16.0-snaproute
     local DEFAULT_KUBEVIRT_VIRTCTL_VERSION=v0.16.0
-    if [[ ${OS} == "linux" ]]; then
+    if [[ "${OS}" == "linux" ]]; then
         local DEFAULT_KUBEVIRT_SOFTWARE_EMULATION=false
-    elif [[ ${OS} == "darwin" ]]; then
+    elif [[ "${OS}" == "darwin" ]]; then
         local DEFAULT_KUBEVIRT_SOFTWARE_EMULATION=true
     fi
 
-    if [[ -z "${KUBEVIRT_IMAGE_REPOSITORY}" ]]; then
+    if [[ "${KUBEVIRT_IMAGE_REPOSITORY:-}" == "" ]]; then
         KUBEVIRT_IMAGE_REPOSITORY=${DEFAULT_KUBEVIRT_IMAGE_REPOSITORY}
     fi
-    if [[ -z "${KUBEVIRT_VERSION}" ]]; then
+    if [[ "${KUBEVIRT_VERSION:-}" == "" ]]; then
         KUBEVIRT_VERSION=${DEFAULT_KUBEVIRT_VERSION}
     fi
-    if [[ -z "${KUBEVIRT_VIRTCTL_VERSION}" ]]; then
+    if [[ "${KUBEVIRT_VIRTCTL_VERSION:-}" == "" ]]; then
         KUBEVIRT_VIRTCTL_VERSION=${DEFAULT_KUBEVIRT_VIRTCTL_VERSION}
     fi
-    if [[ -z "${KUBEVIRT_SOFTWARE_EMULATION}" ]]; then
+    if [[ "${KUBEVIRT_SOFTWARE_EMULATION:-}" == "" ]]; then
         KUBEVIRT_SOFTWARE_EMULATION=${DEFAULT_KUBEVIRT_SOFTWARE_EMULATION}
     fi
 
@@ -2771,25 +2774,25 @@ function __set_metallb_defaults {
     local DEFAULT_METALLB_POOL_VM_CIDR=${CLUSTER_LB_VM_CIDR}
     local DEFAULT_METALLB_COMMUNITY_NOADVERTISE=65535:65282
 
-    if [[ -z "${METALLB_VERSION}" ]]; then
+    if [[ "${METALLB_VERSION:-}" == "" ]]; then
         METALLB_VERSION=${DEFAULT_METALLB_VERSION}
     fi
-    if [[ -z "${METALLB_PEER_ADDRESS}" ]]; then
+    if [[ "${METALLB_PEER_ADDRESS:-}" == "" ]]; then
         METALLB_PEER_ADDRESS=${DEFAULT_METALLB_PEER_ADDRESS}
     fi
-    if [[ -z "${METALLB_PEER_ASN}" ]]; then
+    if [[ "${METALLB_PEER_ASN:-}" == "" ]]; then
         METALLB_PEER_ASN=${DEFAULT_METALLB_PEER_ASN}
     fi
-    if [[ -z "${METALLB_LOCAL_ASN}" ]]; then
+    if [[ "${METALLB_LOCAL_ASN:-}" == "" ]]; then
         METALLB_LOCAL_ASN=${DEFAULT_METALLB_LOCAL_ASN}
     fi
-    if [[ -z "${METALLB_POOL_DEFAULT_CIDR}" ]]; then
+    if [[ "${METALLB_POOL_DEFAULT_CIDR:-}" == "" ]]; then
         METALLB_POOL_DEFAULT_CIDR=${DEFAULT_METALLB_POOL_DEFAULT_CIDR}
     fi
-    if [[ -z "${METALLB_POOL_VM_CIDR}" ]]; then
+    if [[ "${METALLB_POOL_VM_CIDR:-}" == "" ]]; then
         METALLB_POOL_VM_CIDR=${DEFAULT_METALLB_POOL_VM_CIDR}
     fi
-    if [[ -z "${METALLB_COMMUNITY_NOADVERTISE}" ]]; then
+    if [[ "${METALLB_COMMUNITY_NOADVERTISE:-}" == "" ]]; then
         METALLB_COMMUNITY_NOADVERTISE=${DEFAULT_METALLB_COMMUNITY_NOADVERTISE}
     fi
 
