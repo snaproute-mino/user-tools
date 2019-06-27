@@ -28,8 +28,7 @@ function __set_variables {
 
 function sudocmd {
     CMD="$@"
-    CMD=$( eval "echo -e \"${CMD//\"/\\\"}\"" )
-    local OUTPUT=$(sudo bash -c ${CMD})
+    local OUTPUT=$(sudo bash -c "${CMD}")
     echo "${OUTPUT}" &> ${REDIR}
 }
 
