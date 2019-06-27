@@ -756,8 +756,8 @@ function kubeadm_dependencies {
     echo "installing/downloading kubeadm dependencies"
 
     if [[ ! -f $(which kvm-ok || true) || -n ${FULL_INSTALL} ]]; then
-        sudo apt-get update -qy &> ${REDIR} && \
-        sudo apt-get install -qy cpu-checker &> ${REDIR}
+        sudo bash -c "apt-get update -qy" &> ${REDIR} && \
+        sudo bash -c "apt-get install -qy cpu-checker" &> ${REDIR}
     fi
     set +e
     kvm-ok &> /dev/null
@@ -780,7 +780,7 @@ function kubectl_download {
     if [[ ! -f $(which kubectl || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kubectl"
         curl -Lo kubectl curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubectl &> ${REDIR} && \
-            sudo install ./kubectl /usr/local/bin/ &> ${REDIR}
+            sudo bash -c "install $(pwd)/kubectl /usr/local/bin/" &> ${REDIR}
         rm ./kubectl &> ${REDIR} || true
     fi
 }
