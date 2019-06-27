@@ -456,13 +456,13 @@ function __set_kubernetes_defaults {
     
     local DEFAULT_KUBERNETES_OIDC_ISSUER_URL=https://accounts.google.com
 
-    if [[ -z "${KUBERNETES_VERSION:-}" == "" ]]; then
+    if [[ "${KUBERNETES_VERSION:-}" == "" ]]; then
         KUBERNETES_VERSION=${DEFAULT_KUBERNETES_VERSION}
     fi
-    if [[ -z "${KUBERNETES_IMAGE_REPOSITORY:-}" == "" ]]; then
+    if [[ "${KUBERNETES_IMAGE_REPOSITORY:-}" == "" ]]; then
         KUBERNETES_IMAGE_REPOSITORY=${DEFAULT_KUBERNETES_IMAGE_REPOSITORY}
     fi
-    if [[ -z "${KUBERNETES_CONTROLPLANE_ENDPOINT:-}" == "" ]]; then
+    if [[ "${KUBERNETES_CONTROLPLANE_ENDPOINT:-}" == "" ]]; then
         KUBERNETES_CONTROLPLANE_ENDPOINT=${DEFAULT_KUBERNETES_CONTROLPLANE_ENDPOINT}
     fi
 
