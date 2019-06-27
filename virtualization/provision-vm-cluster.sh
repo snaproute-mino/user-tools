@@ -756,7 +756,7 @@ function kubeadm_dependencies {
     echo "installing/downloading kubeadm dependencies"
 
     if [[ ! -f $(which kvm-ok || true) || -n ${FULL_INSTALL} ]]; then
-        sudo apt-get update -qy &> ${REDIR}
+        sudo apt-get update -qy &> ${REDIR} && \
         sudo apt-get install -qy cpu-checker &> ${REDIR}
     fi
     set +e
