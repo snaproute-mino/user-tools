@@ -577,7 +577,7 @@ function minikube_bootstrap {
         fi
         minikube_files
         minikube_start
-        if [[ "${MINIKUBE_REGISTRY_NODEPORT}" != "" ]]; then
+        if [[ "${MINIKUBE_REGISTRY_NODEPORT:-}" != "" ]]; then
             minikube_registry
         fi
 }
@@ -2956,7 +2956,7 @@ minikube (only applicable if bootstrapper is minikube):
     MINIKUBE_MEMORY: ${MINIKUBE_MEMORY}
     MINIKUBE_DISK_SIZE: ${MINIKUBE_DISK_SIZE}
     MINIKUBE_VM_DRIVER: ${MINIKUBE_VM_DRIVER}
-    MINIKUBE_REGISTRY_NODEPORT: ${MINIKUBE_REGISTRY_NODEPORT}
+    MINIKUBE_REGISTRY_NODEPORT: ${MINIKUBE_REGISTRY_NODEPORT:-}
 
 cni (container networking):
     CNI_PLUGINS_VERSION: ${CNI_PLUGINS_VERSION}
