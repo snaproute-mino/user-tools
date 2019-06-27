@@ -489,6 +489,9 @@ function __set_kubernetes_defaults {
     if [[ "${KUBERNETES_OIDC_ISSUER_URL:-}" == "" ]]; then
         KUBERNETES_OIDC_ISSUER_URL=${DEFAULT_KUBERNETES_OIDC_ISSUER_URL}
     fi
+    if [[ "${KUBERNETES_OIDC_CLIENT_ID:-}" == 0 ]]; then
+        KUBERNETES_OIDC_CLIENT_ID=""
+    fi
 
     DEFAULTS_KUBERNETES=$( eval "echo -e \"${KUBERNETES_HELP//\"/\\\"}\"" )
 }
