@@ -621,7 +621,9 @@ function minikube_vmdriver {
 
 function minikube_files {
     echo "Populating additional files"
-    mkdir -p ${ADDITIONAL_FILES_PATH_PREPEND} &> ${REDIR} && true
+    if [[ "${ADDITIONAL_FILES_PATH_PREPEND}" != "" ]]; then
+        mkdir -p ${ADDITIONAL_FILES_PATH_PREPEND} &> ${REDIR} && true
+    fi
 
     CNI_PATH=/etc/cni/net.d
     MINIKUBE_CNIPATH=${ADDITIONAL_FILES_PATH_PREPEND}/${CNI_PATH}
