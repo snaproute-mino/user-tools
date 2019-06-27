@@ -29,7 +29,9 @@ function __set_variables {
 function sudocmd {
     CMD="$@"
     local OUTPUT=$(sudo bash -c "${CMD}")
-    echo "${OUTPUT}" &> ${REDIR}
+    if [[ "$DEBUG" == "true" ]]; then
+        echo "${OUTPUT}" 1>&2
+    fi
 }
 
 ### BOOTSTRAPPER CONFIGURATION
