@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -euxo pipefail
+
 function __set_variables {
     FAILED_VALIDATION=false
 
@@ -96,6 +98,7 @@ function linux_kvm2_enable_nested_virtualization {
 function linux_docker_install {
     echo "Installing docker"
 
+    sudo mkdir -p ${ADDITIONAL_FILES_PATH_PREPEND}/etc/docker/ || true
     sudo systemctl stop docker.service &> ${REDIR}
     echo -e "${DOCKER_CONF}" | sudo tee ${ADDITIONAL_FILES_PATH_PREPEND}/etc/docker/daemon.json > /dev/null
     sudo DEBIAN_FRONTEND=noninteractive \
@@ -104,7 +107,7 @@ function linux_docker_install {
     sudo systemctl enable docker.service &> ${REDIR}
     sudo systemctl start docker.service &> ${REDIR}
     sudo groupadd docker &> ${REDIR} || true
-    sudo usermod -aG docker $(whoami) &> ${REDIR}
+    sudo usermod -aG docker $(whoami) &> ${REDIR} || true
 }
 
 IFS='' read -r -d '' DOCKER_CONF <<"EOL"
