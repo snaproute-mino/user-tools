@@ -599,7 +599,7 @@ function minikube_dependencies_linux {
 function minikube_linux_machine_driver {
     if [[ ! -f $(which docker-machine-driver-kvm2 || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kvm2 machine driver for minikube"
-        curl -Lo docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 &> ${REDIR}
+        curl -Lof docker-machine-driver-kvm2 https://storage.googleapis.com/minikube/releases/latest/docker-machine-driver-kvm2 &> ${REDIR}
         sudocmd install $(pwd)/docker-machine-driver-kvm2 /usr/local/bin/
         rm ./docker-machine-driver-kvm2 &> ${REDIR} || true
     fi
@@ -612,7 +612,7 @@ function minikube_dependencies_darwin {
 
 function minikube_download {
     echo "Downloading minikube"
-    curl -Lo minikube https://storage.googleapis.com/minikube/releases/latest/minikube-${OS}-amd64 &> ${REDIR}
+    curl -Lof minikube https://storage.googleapis.com/minikube/releases/latest/minikube-${OS}-amd64 &> ${REDIR}
     sudocmd install $(pwd)/minikube /usr/local/bin/
     rm $(pwd)/minikube &> ${REDIR} || true
 }
@@ -788,7 +788,7 @@ function kubeadm_dependencies {
 function kubectl_download {
     if [[ ! -f $(which kubectl || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kubectl"
-        curl -Lo kubectl curl -LO https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubectl &> ${REDIR}
+        curl -Lof kubectl https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubectl &> ${REDIR}
         sudocmd install $(pwd)/kubectl /usr/local/bin/
         rm $(pwd)/kubectl &> ${REDIR} || true
     fi
@@ -797,7 +797,7 @@ function kubectl_download {
 function kubeadm_download {
     if [[ ! -f $(which kubeadm || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kubeadm"
-        curl -Lo kubeadm https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubeadm &> ${REDIR}
+        curl -Lof kubeadm https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubeadm &> ${REDIR}
         sudocmd install $(pwd)/kubeadm /usr/local/bin/
         rm $(pwd)/kubeadm &> ${REDIR} || true
     fi
@@ -1866,7 +1866,7 @@ function kubevirt_bootstrap {
 function kubevirt_dependencies {
     if [[ ! -f $(which virtctl || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing virtctl"
-        curl -Lo virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VIRTCTL_VERSION}/virtctl-${KUBEVIRT_VIRTCTL_VERSION}-${OS}-amd64 &> ${REDIR}
+        curl -Lof virtctl https://github.com/kubevirt/kubevirt/releases/download/${KUBEVIRT_VIRTCTL_VERSION}/virtctl-${KUBEVIRT_VIRTCTL_VERSION}-${OS}-amd64 &> ${REDIR}
         sudocmd install $(pwd)/virtctl /usr/local/bin/
         rm $(pwd)/virtctl &> ${REDIR} || true
     fi
