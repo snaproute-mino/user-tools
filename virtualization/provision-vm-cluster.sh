@@ -1876,7 +1876,7 @@ function kubevirt_deploy {
     echo "Deploying kubevirt"
     eval "echo -e \"${KUBEVIRT_YAML//\"/\\\"}\"" | 
     sed 's/@@NODENAME@@/$(NODE_NAME)/' | 
-    sed 's/@@NODEIP@@/$(NODE_IP)/' | 
+    sed 's/@@MY_POD_IP@@/$(MY_POD_IP)/' | 
         kubectl create -f - &> ${REDIR}
 }
 
@@ -2546,9 +2546,9 @@ spec:
         - --port
         - "8443"
         - --hostname-override
-        - \\$(NODE_NAME)
+        - @@NODE_NAME@@
         - --pod-ip-address
-        - \\$(MY_POD_IP)
+        - @@MY_POD_IP@@
         - -v
         - "2"
         env:
