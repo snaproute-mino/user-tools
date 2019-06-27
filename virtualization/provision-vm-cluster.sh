@@ -252,6 +252,7 @@ function __set_ha_defaults {
     if [[ "${HA_CONTROLPLANE_NODES:-}" != "" ]]; then
         ENABLE_HA=true
     else
+        ENABLE_HA=false
         HA_CONTROLPLANE_NODES=""
     fi
     if [[ "${HA_HEARTBEAT_AUTH_MD5SUM:-}" == "" ]]; then
@@ -277,7 +278,7 @@ function ha_bootstrap {
 }
 
 function ha_dependencies {
-    if [[ $ENABLE_HA_PROXY && "${KUBERNETES_CONTROLPLANE_ENDPOINT}" != "" ]]; then
+    if [[ $ENABLE_HA && "${KUBERNETES_CONTROLPLANE_ENDPOINT}" != "" ]]; then
         ha_heartbeat_install
         ha_haproxy_install
     fi
