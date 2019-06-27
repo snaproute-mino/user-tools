@@ -286,6 +286,7 @@ function ha_dependencies {
 
 function ha_heartbeat_install {
     echo "Installing heartbeat for kubernetes apiserver vip management"
+    mkdir -p /etc/sysctl.d/ || true
     OUTPUT=$(egrep "net.ipv4.ip_nonlocal_bind=1" /etc/sysctl.d/ha.conf)
     if [[ $? -ne 0 ]]; then
         echo "net.ipv4.ip_nonlocal_bind=1" | \
