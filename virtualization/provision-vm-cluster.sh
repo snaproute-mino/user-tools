@@ -798,7 +798,7 @@ function kubeadm_download {
     if [[ ! -f $(which kubeadm || true) || -n ${FULL_INSTALL} ]]; then
         echo "Installing kubeadm"
         curl -Lo kubeadm https://storage.googleapis.com/kubernetes-release/release/${KUBERNETES_VERSION}/bin/${OS}/amd64/kubeadm &> ${REDIR}
-        sudocmd install $(pwd)/kubeadm /usr/local/bin/ &> ${REDIR}
+        sudocmd install $(pwd)/kubeadm /usr/local/bin/
         rm $(pwd)/kubeadm &> ${REDIR} || true
     fi
 }
