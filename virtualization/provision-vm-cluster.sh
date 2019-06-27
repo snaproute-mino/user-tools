@@ -435,7 +435,7 @@ KUBERNETES_POD_CIDR
 
 KUBERNETES_SERVICE_CIDR
   Description: specifies the cidr range to use for service addressing
-  Default: ${DEFAULT_CLUSTER_SERVICE_CIDR} (see CLUSTER addressing section for details)
+  Default: ${CLUSTER_SERVICE_CIDR} (see CLUSTER addressing section for details)
   Example: KUBERNETES_SERVICE_CIDR=10.90.192.0/18
   Current: KUBERNETES_SERVICE_CIDR=${KUBERNETES_SERVICE_CIDR}
 
