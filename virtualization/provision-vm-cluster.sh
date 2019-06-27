@@ -271,23 +271,23 @@ function __set_ha_defaults {
 ### HA BOOTSTRAP
 
 function ha_bootstrap {
-    ha_dependencies
+    if [[ "${ENABLE_HA}" == "true" && "${KUBERNETES_CONTROLPLANE_ENDPOINT}" != "" ]]; then
+        ha_dependencies
+    fi
     if [[ "${DEPENDENCIES_ONLY}" == "true" ]]; then
         return 0
     fi
 }
 
 function ha_dependencies {
-    if [[ $ENABLE_HA && "${KUBERNETES_CONTROLPLANE_ENDPOINT}" != "" ]]; then
-        ha_heartbeat_install
-        ha_haproxy_install
-    fi
+    ha_heartbeat_install
+    ha_haproxy_install
 }
 
 function ha_heartbeat_install {
     echo "Installing heartbeat for kubernetes apiserver vip management"
     mkdir -p /etc/sysctl.d/ || true
-    OUTPUT=$(egrep "net.ipv4.ip_nonlocal_bind=1" /etc/sysctl.d/ha.conf)
+    OUTPUT=$(egrep "net.ipv4.ip_nonlocal_bind=1" /etc/sysctl.d/ha.conf || true)
     if [[ $? -ne 0 ]]; then
         echo "net.ipv4.ip_nonlocal_bind=1" | \
             sudo tee -a /etc/sysctl.d/ha.conf &> ${REDIR}
