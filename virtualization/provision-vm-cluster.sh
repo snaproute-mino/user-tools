@@ -25,7 +25,7 @@ function __set_variables {
 
 ### BOOTSTRAPPER CONFIGURATION
 
-IFS='' read -r -d '' BOOTSTRAPPER_HELP <<"EOL"
+IFS='' read -r -d '\0' BOOTSTRAPPER_HELP <<"EOL"
 DEBUG
   Description: specifies whether verbose logging should occur
   Default: ${DEFAULT_DEBUG}
@@ -49,6 +49,7 @@ DEPENDENCIES_ONLY
   Default: ${DEFAULT_DEPENDENCIES_ONLY}
   Example: DEPENDENCIES_ONLY=true
   Current: DEPENDENCIES_ONLY=${DEPENDENCIES_ONLY}
+\0
 EOL
 
 function __set_bootstrapper_defaults {
@@ -110,7 +111,7 @@ function linux_docker_install {
     sudo usermod -aG docker $(whoami) &> ${REDIR} || true
 }
 
-IFS='' read -r -d '' DOCKER_CONF <<"EOL"
+IFS='' read -r -d '\0' DOCKER_CONF <<"EOL"
 {
 "exec-opts": ["native.cgroupdriver=systemd"],
 "log-driver": "json-file",
@@ -119,6 +120,7 @@ IFS='' read -r -d '' DOCKER_CONF <<"EOL"
 },
 "storage-driver": "overlay2"
 }
+\0
 EOL
 
 ### darwin dependencies
@@ -140,7 +142,7 @@ function darwin_virtualbox_install {
 
 ### CLUSTER CONFIGURATION
 
-IFS='' read -r -d '' CLUSTER_HELP <<"EOL"
+IFS='' read -r -d '\0' CLUSTER_HELP <<"EOL"
 CLUSTER_CONTROLPLANE_ENDPOINT
   Description: specifies the IP:port for k8s cluster (must be set to intended VIP if deploying HA cluster)
   Default: ${DEFAULT_CLUSTER_CONTROLPLANE_ENDPOINT} (derived from default interface ip)
@@ -176,6 +178,7 @@ CLUSTER_SERVICE_CIDR
   Default: ${DEFAULT_CLUSTER_SERVICE_CIDR} (dynamically assigned by using CLUSTER_ID, 10.x.192.0/18)
   Example: CLUSTER_SERVICE_CIDR=10.20.192.0/18
   Current: CLUSTER_SERVICE_CIDR=${CLUSTER_SERVICE_CIDR}
+\0
 EOL
 
 function __set_cluster_defaults {
@@ -210,7 +213,7 @@ function __set_cluster_defaults {
 
 ### HA CONFIGURATION
 
-IFS='' read -r -d '' HA_HELP <<"EOL"
+IFS='' read -r -d '\0' HA_HELP <<"EOL"
 HA_CONTROLPLANE_NODES
   Description: specifies the names of kubernetes master nodes to load-balance (if unset, controlplane will be provisioned as single-node)
     (must match uname -n for each node)
@@ -235,6 +238,7 @@ HA_HEARTBEAT_UDP_PORT
   Default: ${DEFAULT_HA_HEARTBEAT_UDP_PORT}
   Example: HA_HEARTBEAT_UDP_PORT=700
   Current: HA_HEARTBEAT_UDP_PORT=${HA_HEARTBEAT_UDP_PORT}
+\0
 EOL
 
 function __set_ha_defaults {
@@ -312,7 +316,7 @@ function ha_heartbeat_install {
     sudo systemctl restart heartbeat &> ${REDIR}
 }
 
-IFS='' read -r -d '' HA_CONF <<"EOL"
+IFS='' read -r -d '\0' HA_CONF <<"EOL"
 #       keepalive: how many seconds between heartbeats
 #
 keepalive 2
@@ -335,6 +339,7 @@ logfacility     local0
 #       Tell what machines are in the cluster
 #       node    nodename ...    -- must match uname -n
 ${HEARTBEAT_NODES_CONF}
+\0
 EOL
 
 function ha_haproxy_install {
@@ -356,7 +361,7 @@ function ha_haproxy_install {
     sudo systemctl restart haproxy &> ${REDIR}
 }
 
-IFS='' read -r -d '' HAPROXY_CONF <<"EOL"
+IFS='' read -r -d '\0' HAPROXY_CONF <<"EOL"
 defaults
   timeout connect 5000ms
   timeout check 5000ms
@@ -386,12 +391,13 @@ backend kubernetes-master-nodes
   option httpchk GET /healthz
   http-check expect string ok
 ${HAPROXY_NODES_CONF}
+\0
 EOL
 
 
 ### KUBERNETES CONFIGURATION
 
-IFS='' read -r -d '' KUBERNETES_HELP <<"EOL"
+IFS='' read -r -d '\0' KUBERNETES_HELP <<"EOL"
 KUBERNETES_VERSION
   Description: specifies which version of kubernetes to provision
   Default: ${DEFAULT_KUBERNETES_VERSION}
@@ -437,6 +443,7 @@ KUBERNETES_OIDC_CLIENT_ID
   Description: specifies the OIDC client provider to use for kube-apiserver authentication
   Default: unset
   Current: KUBERNETES_OIDC_CLIENT_ID=${KUBERNETES_OIDC_CLIENT_ID}
+\0
 EOL
 
 function __set_kubernetes_defaults {
@@ -484,7 +491,7 @@ function __set_kubernetes_defaults {
 
 ### MINIKUBE CONFIGURATION
 
-IFS='' read -r -d '' DEFAULTS_MINIKUBE <<"EOL"
+IFS='' read -r -d '\0' DEFAULTS_MINIKUBE <<"EOL"
 MINIKUBE_CPUS
   Description:specifies the number of cpus to allocate to minikube vm
     (minimum 4 cores suggested, performance of nested vms will be impacted if too low)
@@ -519,6 +526,7 @@ MINIKUBE_REGISTRY_NODEPORT
   Default: unset
   Example: MINIKUBE_REGISTRY_NODEPORT=31000
   Current: MINIKUBE_REGISTRY_NODEPORT=${MINIKUBE_REGISTRY_NODEPORT}
+\0
 EOL
 
 function __set_minikube_defaults {
@@ -610,7 +618,7 @@ function minikube_files {
     echo -e "127.0.1.1 minikube" >> ${MINIKUBE_HOSTSPATH}
 }
 
-IFS='' read -r -d '' K8S_CNICONF <<"EOL"
+IFS='' read -r -d '\0' K8S_CNICONF <<"EOL"
 {
   "name": "rkt.kubernetes.io",
   "type": "bridge",
@@ -630,6 +638,7 @@ IFS='' read -r -d '' K8S_CNICONF <<"EOL"
     ]
   }
 }
+\0
 EOL
 
 function minikube_start {
@@ -674,7 +683,7 @@ function minikube_registry {
         kubectl create -f - &> ${REDIR}
 }
 
-IFS=''  read -r -d '' REGISTRY_YAML << "EOL"
+IFS=''  read -r -d '\0' REGISTRY_YAML << "EOL"
 apiVersion: v1
 kind: ReplicationController
 metadata:
@@ -717,6 +726,7 @@ spec:
     targetPort: 5000
   selector:
     kubernetes.io/minikube-addons: registry
+\0
 EOL
 
 
@@ -830,16 +840,17 @@ function kubeadm_init {
 }
 
 
-IFS='' read -r -d '' KUBERNETES_OIDC_CONF <<"EOL"
+IFS='' read -r -d '\0' KUBERNETES_OIDC_CONF <<"EOL"
     oidc-issuer-url: ${KUBERNETES_OIDC_ISSUER_URL}
     oidc-client-id: ${KUBERNETES_OIDC_CLIENT_ID}
     oidc-username-claim: email
     oidc-username-prefix: "oidc:"
     oidc-groups-claim: groups
     oidc-groups-prefix: "oidc:"
+\0
 EOL
 
-IFS='' read -r -d '' KUBEADM_CONF <<"EOL"
+IFS='' read -r -d '\0' KUBEADM_CONF <<"EOL"
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: InitConfiguration
 localAPIEndpoint:
@@ -895,13 +906,14 @@ evictionHard:
   nodefs.available: "0%"
   nodefs.inodesFree: "0%"
   imagefs.available: "0%"
+\0
 EOL
 
 
 
 ### CNI CONFIGURATION
 
-IFS='' read -r -d '' CNI_HELP <<"EOL"
+IFS='' read -r -d '\0' CNI_HELP <<"EOL"
 CNI_PLUGINS_VERSION
   Description: specifies which version of cni plugins to deploy
   Default: ${DEFAULT_CNI_PLUGINS_VERSION}
@@ -937,6 +949,7 @@ CNI_FLANNEL_IMAGE_REPOSITORY
   Default: ${DEFAULT_CNI_FLANNEL_IMAGE_REPOSITORY}
   Example: CNI_FLANNEL_IMAGE_REPOSITORY=${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/cni
   Current: CNI_FLANNEL_IMAGE_REPOSITORY=${CNI_FLANNEL_IMAGE_REPOSITORY}
+\0
 EOL
 
 function __set_cni_defaults {
@@ -991,7 +1004,7 @@ function multus_deploy {
         kubectl create -f - &> ${REDIR}
 }
 
-IFS='' read -r -d '' FLANNEL_YAML <<"EOL"
+IFS='' read -r -d '\0' FLANNEL_YAML <<"EOL"
 ---
 apiVersion: extensions/v1beta1
 kind: PodSecurityPolicy
@@ -1525,9 +1538,10 @@ spec:
         - name: flannel-cfg
           configMap:
             name: kube-flannel-cfg
+\0
 EOL
 
-IFS=''  read -r -d '' MULTUS_YAML << "EOL"
+IFS=''  read -r -d '\0' MULTUS_YAML << "EOL"
 ---
 apiVersion: apiextensions.k8s.io/v1beta1
 kind: CustomResourceDefinition
@@ -1702,17 +1716,19 @@ spec:
             items:
             - key: cni-conf.json
               path: 70-multus.conf
+\0
 EOL
 
 
 ### HELM CONFIGURATION
 
-IFS='' read -r -d '' HELM_HELP <<"EOL"
+IFS='' read -r -d '\0' HELM_HELP <<"EOL"
 HELM_VERSION
   Description: specifies which version of helm to provision
   Default: ${DEFAULT_HELM_VERSION}
   Example: HELM_VERSION=v2.10.0
   Current: HELM_VERSION=${HELM_VERSION}
+\0
 EOL
 
 function __set_helm_defaults {
@@ -1756,7 +1772,7 @@ function helm_deploy {
 
 ### KUBEVIRT CONFIGURATION
 
-IFS='' read -r -d '' KUBEVIRT_HELP <<"EOL"
+IFS='' read -r -d '\0' KUBEVIRT_HELP <<"EOL"
 KUBEVIRT_VERSION
   Description: specifies the version to use for kubevirt (virt-api / virt-controller / virt-handler)
   Default: ${DEFAULT_KUBEVIRT_VERSION}
@@ -1780,6 +1796,7 @@ KUBEVIRT_SOFTWARE_EMULATION
   Default: ${DEFAULT_KUBEVIRT_SOFTWARE_EMULATION}
   Example: KUBEVIRT_SOFTWARE_EMULATION=true
   Current: KUBEVIRT_SOFTWARE_EMULATION=${KUBEVIRT_SOFTWARE_EMULATION}
+\0
 EOL
 
 function __set_kubevirt_defaults {
@@ -1841,7 +1858,7 @@ function kubevirt_enable_emulation {
     kubectl create configmap -n kubevirt kubevirt-config --from-literal debug.useEmulation=true
 }
 
-IFS=''  read -r -d '' KUBEVIRT_YAML << "EOL"
+IFS=''  read -r -d '\0' KUBEVIRT_YAML << "EOL"
 ---
 apiVersion: v1
 kind: Namespace
@@ -2693,12 +2710,13 @@ spec:
     singular: virtualmachineinstancemigration
   scope: Namespaced
   version: v1alpha3
+\0
 EOL
 
 
 ### METALLB CONFIGURATION
 
-IFS='' read -r -d '' METALLB_HELP <<"EOL"
+IFS='' read -r -d '\0' METALLB_HELP <<"EOL"
 METALLB_VERSION
   Description: specifies the version to use for metallb
   Default: ${DEFAULT_METALLB_VERSION}
@@ -2741,6 +2759,7 @@ METALLB_COMMUNITY_NOADVERTISE
   Default: ${DEFAULT_METALLB_COMMUNITY_NOADVERTISE}
   Example: METALLB_COMMUNITY_NOADVERTISE=65555:65300
   Current: METALLB_COMMUNITY_NOADVERTISE=${METALLB_COMMUNITY_NOADVERTISE}
+\0
 EOL
 
 function __set_metallb_defaults {
@@ -2794,7 +2813,7 @@ function metallb_install {
         &> ${REDIR}
 }
 
-IFS=''  read -r -d '' METALLB_CONF << "EOL"
+IFS=''  read -r -d '\0' METALLB_CONF << "EOL"
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -2830,13 +2849,14 @@ data:
       - aggregation-length: ${METALLB_POOL_VM_CIDR##*/}
     bgp-communities:
       no-advertise: ${METALLB_COMMUNITY_NOADVERTISE}
+\0
 EOL
 
 function bootstrapper_help {
     eval "echo -e \"${BOOTSTRAPPER_TEMPLATE}\"" | cat
 }
 
-IFS='' read -r -d '' BOOTSTRAPPER_TEMPLATE <<"EOL"
+IFS='' read -r -d '\0' BOOTSTRAPPER_TEMPLATE <<"EOL"
 # FOLLOWING ENVIRONMENT VARIABLES MODIFY INSTALLATION BEHAVIOR
 
 ### BOOTSTRAPPER
@@ -2874,6 +2894,7 @@ ${DEFAULTS_KUBEVIRT}
 
 ### METALLB (used for external load-balancer services)
 ${DEFAULTS_METALLB}
+\0
 EOL
 
 
@@ -2881,7 +2902,7 @@ function bootstrapper_info {
     eval "echo -e \"${BOOTSTRAPPER_INFO}\"" | cat
 }
 
-IFS='' read -r -d '' BOOTSTRAPPER_INFO <<"EOL"
+IFS='' read -r -d '\0' BOOTSTRAPPER_INFO <<"EOL"
 host info:
     OS: ${OS}
     OS_DISTRIBUTOR: ${OS_DISTRIBUTOR}
@@ -2954,6 +2975,7 @@ metallb (load-balancer for kubernetes services, only applicable if METALLB_PEER_
     METALLB_POOL_DEFAULT_CIDR: ${METALLB_POOL_DEFAULT_CIDR}
     METALLB_POOL_VM_CIDR: ${METALLB_POOL_VM_CIDR}
     METALLB_COMMUNITY_NOADVERTISE: ${METALLB_COMMUNITY_NOADVERTISE}
+\0
 EOL
 
 function bootstrap {
