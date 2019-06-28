@@ -897,7 +897,7 @@ nodeRegistration:
   - effect: PreferNoSchedule
     key: node-role.kubernetes.io/master
   kubeletExtraArgs:
-    fail-swap-on: false
+    fail-swap-on: "false"
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
