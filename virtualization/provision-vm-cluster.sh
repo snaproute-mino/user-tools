@@ -894,6 +894,10 @@ nodeRegistration:
   taints:
   - effect: PreferNoSchedule
     key: node-role.kubernetes.io/master
+  ignorePreflightErrors:
+  - Swap
+  kubeletExtraArgs:
+    fail-swap-on: false
 ---
 apiVersion: kubeadm.k8s.io/v1beta1
 kind: ClusterConfiguration
