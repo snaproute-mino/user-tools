@@ -853,6 +853,7 @@ function kubeadm_init {
 
     KUBEADM_OUTPUT=$(\
         sudo kubeadm init \
+        --ignore-preflight-errors=Swap \
         --config=./kubeadm.yaml \
         --experimental-upload-certs \
         ${EXTRA_FLAGS} \
@@ -894,8 +895,6 @@ nodeRegistration:
   taints:
   - effect: PreferNoSchedule
     key: node-role.kubernetes.io/master
-  ignorePreflightErrors:
-  - Swap
   kubeletExtraArgs:
     fail-swap-on: false
 ---
