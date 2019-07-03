@@ -4,7 +4,7 @@
 
 1) Download the provisioning script
 
-    curl -Lo provision-vm-cluster.sh https://github.com/snaproute-mino/user-tools/blob/v1.0.0/virtualization/provision-vm-cluster.sh
+    curl -Lo provision-vm-cluster.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/v1.0.0/virtualization/provision-vm-cluster.sh
 
 ```
 server41@server41:~$ curl -Lo provision-vm-cluster.sh https://github.com/snaproute-mino/user-tools/blob/v1.0.0/virtualization/provision-vm-cluster.sh
