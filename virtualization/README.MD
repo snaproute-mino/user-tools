@@ -296,22 +296,31 @@ kubectl get sa
 
 1) Contact your sales representation or email info@snaproute.com to request an account
 
-2) Create an image pull secret for the account provided in step 1 (this should be created in the namespace that you'll be deploying cnnos-topologies)
+2) Create an image pull secret for the account provided in step 1 (this should be created in the namespace that you'll be deploying cnnos-topologies) - subsitute docker-username, docker-email, and docker-password with those provided: 
 
 ```
 kubectl create secret docker-registry snaproute-pull-secret \
 --docker-server=repo.snaproute.com \
---docker-username=john.doe@customer.local \
---docker-email=john.doe@customer.local \
+--docker-username=<john.doe@customer.local> \
+--docker-email=<john.doe@customer.local> \
 --docker-password=PasswordProvided
+```
+You should see a message like this:
+
+```
+secret/snaproute-pull-secret created
 ```
 
 ## Deploying an onie-http server for hosting cn-nos monolithic image to ONIE VMs
 
-1) Add the cn-nos release repo
+1) Add the cn-nos release repo - substitue the username and password to those provided:
 
 ```
 helm repo add cnnos-release --username="john.doe@customer.local" --password="PasswordProvided" https://repo.snaproute.com/chartrepo/release
+```
+You should see a message like this, after the repo is added:
+```
+"cnnos-release" has been added to your repositories
 ```
 
 2) Perform a repo update to ensure you have access to the latest charts
@@ -340,6 +349,14 @@ PULL_SECRET=snaproute-pull-secret
 VERSION=v1.1.0-R15
 helm template --name onie-http-server --set imagePullSecret=${PULL_SECRET} cnnos-monolithic-${VERSION}.tgz | kubectl create -f -
 ```
+
+After this, you should see a message like this:
+
+```
+service/onie-http-server-cnnos-monolithic created
+deployment.apps/onie-http-server-cnnos-monolithic created
+```
+
 
 6) Verify the server is running (this may take some time in ContainerCreating as the monolithic image is downloaded)
 
