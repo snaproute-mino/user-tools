@@ -391,7 +391,7 @@ CHART_FILE=${TOPOLOGY}-${VERSION}.tgz
 TOPOLOGY_NAME=my-topology
 CLUSTER_IP=$(kubectl get service onie-http-server-cnnos-monolithic -o jsonpath="{.spec.clusterIP}")
 
-helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/monolithic/onie-installer_x86-64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
+helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/monolithic/onie-installer-x86_64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
 ```
 
 ```
