@@ -90,9 +90,9 @@ vmPresets:
     memory: 32G
 
 onieImages:
-  8G: repo.snaproute.com/vm-infra/onie/onie-8g:v1.0
-  16G: repo.snaproute.com/vm-infra/onie/onie-16g:v1.0
-  32G: repo.snaproute.com/vm-infra/onie/onie-32g:v1.0
+  8G: repo.snaproute.com/vm-infra/onie/onie-8g:v1.0.0
+  16G: repo.snaproute.com/vm-infra/onie/onie-16g:v1.0.0
+  32G: repo.snaproute.com/vm-infra/onie/onie-32g:v1.0.0
 
 
 # DHCP server configuration for management network
