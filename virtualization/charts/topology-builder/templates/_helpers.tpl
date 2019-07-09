@@ -292,7 +292,8 @@ function kubeconfig-update() {
         mkdir -p ${CACHE}/${SWITCH_IP}-${SWITCH_SSH_PORT}
 
         if [[ ! ${SKIP_COPY} ]]; then
-            CMD="sshpass -p \"${PASSWORD}\" scp -P ${SWITCH_SSH_PORT} ${IGNORE_SSH} ${USER}@${SWITCH_IP}:${KUBEPATH} ${TARGET}"
+            export SSHPASS=${PASSWORD}
+            CMD="sshpass -e scp -P ${SWITCH_SSH_PORT} ${IGNORE_SSH} ${USER}@${SWITCH_IP}:${KUBEPATH} ${TARGET}"
             if [[ $KUBECONFIG_DEBUG ]]; then
                 >&2 echo "${CMD}"
             fi
