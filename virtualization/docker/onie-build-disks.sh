@@ -79,19 +79,19 @@ build:
     docker:
       dockerfile: Dockerfile
       buildArgs:
-        DISK_SIZE: "8"
+        DISK_SIZE: "8G"
   - image: onie-16g
     context: ${ONIE_DOCKER_CONTEXT}
     docker:
       dockerfile: Dockerfile
       buildArgs:
-        DISK_SIZE: "16"
+        DISK_SIZE: "16G"
   - image: onie-32g
     context: ${ONIE_DOCKER_CONTEXT}
     docker:
       dockerfile: Dockerfile
       buildArgs:
-        DISK_SIZE: "32"
+        DISK_SIZE: "32G"
   local:
     push: true
     useDockerCLI: true
