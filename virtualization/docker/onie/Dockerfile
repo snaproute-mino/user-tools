@@ -29,7 +29,7 @@ RUN git clone https://github.com/opencomputeproject/onie /local/onie
 
 RUN sed -i 's/^#EXTRA_CMDLINE_LINUX.*/EXTRA_CMDLINE_LINUX ?= dhcp=eth0,eth1/' machine/kvm_x86_64/machine.make && \
     sed -i "s/^#.*RECOVERY_DEFAULT_ENTRY.*/RECOVERY_DEFAULT_ENTRY = embed/" machine/kvm_x86_64/machine.make && \
-    sed -i 's#true ${onie_dhcp="$val"}#true ${onie_dhcp="${val//,/ }"}#' machine/kvm_x86_64/machine.make && \
+    sed -i 's#true ${onie_dhcp="$val"}#true ${onie_dhcp="${val//,/ }"}#' rootconf/default/lib/onie/functions && \
     sed -i 's#echo "Post installation hook"# \
         echo "Post installation hook"\n \
         local embed=$(grep 'embed' /proc/cmdline | wc -l)\n \
