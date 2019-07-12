@@ -87,47 +87,47 @@ function helm_init {
 ### SNAPROUTE REPO CONFIGURATION
 
 IFS='' read -r -d '' SNAPROUTE_HELP <<"EOL"
-SNAPROUTE_VM_HELM_REPO_NAME
-  Description: specifies name to use for SnapRoute VM repo
-  Default: ${DEFAULT_SNAPROUTE_VM_HELM_REPO_NAME}
-  Current: SNAPROUTE_VM_HELM_REPO_NAME=${SNAPROUTE_VM_HELM_REPO_NAME}
+SNAPROUTE_HELM_REPO_NAME
+  Description: specifies name to use for SnapRoute chart repo
+  Default: ${DEFAULT_SNAPROUTE_HELM_REPO_NAME}
+  Current: SNAPROUTE_HELM_REPO_NAME=${SNAPROUTE_HELM_REPO_NAME}
 
-SNAPROUTE_VM_HELM_REPO_URL
-  Description: specifies url to use for SnapRoute VM repo
-  Default: ${DEFAULT_SNAPROUTE_VM_HELM_REPO_URL}
-  Current: SNAPROUTE_VM_HELM_REPO_URL=${HELM_SNAPROUTE_VM_HELM_REPO_URLVERSION}
+SNAPROUTE_HELM_REPO_URL
+  Description: specifies url to use for SnapRoute chart repo
+  Default: ${DEFAULT_SNAPROUTE_HELM_REPO_URL}
+  Current: SNAPROUTE_HELM_REPO_URL=${HELM_SNAPROUTE_HELM_REPO_URLVERSION}
 
-SNAPROUTE_VM_CHART_VERSION
+SNAPROUTE_CHART_VERSION
   Description: specifies version to publish chart
   Default: uses git describe to get latest tag on branch, or v0.1 if no tags exist
-  Current: SNAPROUTE_VM_CHART_VERSION=${SNAPROUTE_VM_CHART_VERSION}
+  Current: SNAPROUTE_CHART_VERSION=${SNAPROUTE_CHART_VERSION}
 
-SNAPROUTE_VM_CHART_ROOT
-  Description: specifies version to publish chart
+SNAPROUTE_CHART_ROOT
+  Description: specifies directory to find charts that should be published
   Default: current working directory (output of pwd)
-  Current: SNAPROUTE_VM_CHART_ROOT=${SNAPROUTE_VM_CHART_ROOT}
+  Current: SNAPROUTE_CHART_ROOT=${SNAPROUTE_CHART_ROOT}
 EOL
 
 function __set_snaproute_defaults {
-    local DEFAULT_SNAPROUTE_VM_HELM_REPO_NAME=cnnos-virtualization
-    local DEFAULT_SNAPROUTE_VM_HELM_REPO_URL=https://repo.snaproute.com/chartrepo/virtualization
-    local DEFAULT_SNAPROUTE_VM_CHART_VERSION=$(git describe --tag 2> /dev/null )
-    if [[ $? -ne 0 || "${DEFAULT_SNAPROUTE_VM_CHART_VERSION}" == "" ]]; then
-        DEFAULT_SNAPROUTE_VM_CHART_VERSION=v0.1
+    local DEFAULT_SNAPROUTE_HELM_REPO_NAME=cnnos-virtualization
+    local DEFAULT_SNAPROUTE_HELM_REPO_URL=https://repo.snaproute.com/chartrepo/virtualization
+    local DEFAULT_SNAPROUTE_CHART_VERSION=$(git describe --tag 2> /dev/null )
+    if [[ $? -ne 0 || "${DEFAULT_SNAPROUTE_CHART_VERSION}" == "" ]]; then
+        DEFAULT_SNAPROUTE_CHART_VERSION=v0.1
     fi
-    local DEFAULT_SNAPROUTE_VM_CHART_ROOT=$(pwd)
+    local DEFAULT_SNAPROUTE_CHART_ROOT=$(pwd)
 
-    if [[ -z "${SNAPROUTE_VM_HELM_REPO_NAME}" ]]; then
-        SNAPROUTE_VM_HELM_REPO_NAME=${DEFAULT_SNAPROUTE_VM_HELM_REPO_NAME}
+    if [[ -z "${SNAPROUTE_HELM_REPO_NAME}" ]]; then
+        SNAPROUTE_HELM_REPO_NAME=${DEFAULT_SNAPROUTE_HELM_REPO_NAME}
     fi
-    if [[ -z "${SNAPROUTE_VM_HELM_REPO_URL}" ]]; then
-        SNAPROUTE_VM_HELM_REPO_URL=${DEFAULT_SNAPROUTE_VM_HELM_REPO_URL}
+    if [[ -z "${SNAPROUTE_HELM_REPO_URL}" ]]; then
+        SNAPROUTE_HELM_REPO_URL=${DEFAULT_SNAPROUTE_HELM_REPO_URL}
     fi
-    if [[ -z "${SNAPROUTE_VM_CHART_VERSION}" ]]; then
-        SNAPROUTE_VM_CHART_VERSION=${DEFAULT_SNAPROUTE_VM_CHART_VERSION}
+    if [[ -z "${SNAPROUTE_CHART_VERSION}" ]]; then
+        SNAPROUTE_CHART_VERSION=${DEFAULT_SNAPROUTE_CHART_VERSION}
     fi
-    if [[ -z "${SNAPROUTE_VM_CHART_ROOT}" ]]; then
-        SNAPROUTE_VM_CHART_ROOT=${DEFAULT_SNAPROUTE_VM_CHART_ROOT}
+    if [[ -z "${SNAPROUTE_CHART_ROOT}" ]]; then
+        SNAPROUTE_CHART_ROOT=${DEFAULT_SNAPROUTE_CHART_ROOT}
     fi
 
     DEFAULTS_SNAPROUTE=$( eval "echo -e \"${SNAPROUTE_HELP//\"/\\\"}\"" )
@@ -136,21 +136,21 @@ function __set_snaproute_defaults {
 ### SNAPROUTE INSTALL
 
 function snaproute_bootstrap {
-    helm repo add ${SNAPROUTE_VM_HELM_REPO_NAME} ${SNAPROUTE_VM_HELM_REPO_URL}
+    helm repo add ${SNAPROUTE_HELM_REPO_NAME} ${SNAPROUTE_HELM_REPO_URL}
     helm repo update &> ${REDIR}
 
-    snaproute_vm_publish_charts
+    SNAPROUTE_publish_charts
 }
 
-function snaproute_vm_publish_charts {
-    for chart_path in $(find ${SNAPROUTE_VM_CHART_ROOT} -name Chart.yaml ); do
+function SNAPROUTE_publish_charts {
+    for chart_path in $(find ${SNAPROUTE_CHART_ROOT} -name Chart.yaml ); do
         chart_path=$(dirname $chart_path)
         echo "Packaging ${chart_path}"
-        OUTPUT=$(helm package --version ${SNAPROUTE_VM_CHART_VERSION} --app-version ${SNAPROUTE_VM_CHART_VERSION} --dependency-update ${chart_path} )
+        OUTPUT=$(helm package --version ${SNAPROUTE_CHART_VERSION} --app-version ${SNAPROUTE_CHART_VERSION} --dependency-update ${chart_path} )
         if [ $? -eq 0 ]; then
         	CHART_PACKAGE=$(echo "$OUTPUT" | egrep "Successfully packaged chart" | sed 's/^Success.*: //')
-            echo "Uploading ${CHART_PACKAGE} to ${SNAPROUTE_VM_HELM_REPO_URL}"
-            OUTPUT=$(helm push ${CHART_PACKAGE} ${SNAPROUTE_VM_HELM_REPO_NAME})
+            echo "Uploading ${CHART_PACKAGE} to ${SNAPROUTE_HELM_REPO_URL}"
+            OUTPUT=$(helm push ${CHART_PACKAGE} ${SNAPROUTE_HELM_REPO_NAME})
             echo "${OUTPUT}"
             rm "${CHART_PACKAGE}"
         else
@@ -235,9 +235,9 @@ helm:
     HELM_REPO_USERNAME: omitted
 
 snaproute:
-    SNAPROUTE_VM_HELM_REPO_NAME: ${SNAPROUTE_VM_HELM_REPO_NAME}
-    SNAPROUTE_VM_HELM_REPO_URL: ${SNAPROUTE_VM_HELM_REPO_URL}
-    SNAPROUTE_VM_CHART_VERSION: ${SNAPROUTE_VM_CHART_VERSION}
+    SNAPROUTE_HELM_REPO_NAME: ${SNAPROUTE_HELM_REPO_NAME}
+    SNAPROUTE_HELM_REPO_URL: ${SNAPROUTE_HELM_REPO_URL}
+    SNAPROUTE_CHART_VERSION: ${SNAPROUTE_CHART_VERSION}
 EOL
 
 

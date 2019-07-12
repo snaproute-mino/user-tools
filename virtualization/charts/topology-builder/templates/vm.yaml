@@ -14,6 +14,9 @@
 {{- end -}}
 {{- end -}}
 {{- range $name, $vm := .Values.vms -}}
+{{- if not $vm.image -}}
+{{- $_ := set $vm "image" (index $.Values.onieImages $vm.diskSize) -}}
+{{- end -}}
 {{- $vmResources := dict -}}
 {{- $vmPreset := index $.Values.vmPresets $vm.vmPreset -}}
 {{- if $vmPreset -}}
@@ -117,7 +120,7 @@ spec:
       volumes:
         - name: containerdisk
           containerDisk:
-            image: {{ index $.Values.onieImages $vm.diskSize }}
+            image: {{ $vm.image }}
 ---
 {{- $sshPort := $.Values.sshPort -}}
 {{ $apiPort := $.Values.apiPort }}

@@ -1700,6 +1700,11 @@ spec:
       initContainers:
       - name: install-cni
         image: ${CNI_PLUGINS_IMAGE_REPOSITORY}/cni-plugins:${CNI_PLUGINS_VERSION}-amd64
+        command:
+        - /bin/sh
+        - -c
+        args:
+        - cp -f /plugins/* /opt/cni/bin/
         volumeMounts:
         - name: cnibin
           mountPath: /opt/cni/bin/

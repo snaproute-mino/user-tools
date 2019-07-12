@@ -421,7 +421,7 @@ TOPOLOGY_NAME=my-topology
 CLUSTER_IP=$(kubectl get service onie-http-server-cnnos-monolithic -o jsonpath="{.spec.clusterIP}")
 
 helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/monolithic/onie-installer-x86_64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
-ubuntu@server:~$ 
+ubuntu@server:~$
 ```
 
 You should see output similar to this:
@@ -534,8 +534,6 @@ CN_NOS CN-NOS-1.0.0 CN-NOS-unknown ttyS0
 
 CN-NOS-unknown login: root
 root@CN-NOS-unknown:~# 
-root@CN-NOS-unknown:~# 
-
 ```
 
 9) From the console of the virtual instance, the CLI can be accessed using the cncli command
@@ -605,5 +603,4 @@ Available completions :
   vxlantunnel        Vxlan Tunnel Information
   |                  Output modifiers
   <cr>               
-
 ```
