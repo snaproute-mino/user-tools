@@ -1877,10 +1877,11 @@ function kubefed_bootstrap {
 function kubefed_dependencies {
     if [[ ! -f $(which kubefedctl || true) || "${FULL_INSTALL}" == "true" ]]; then
         >&2 echo "Installing kubefedctl"
-        curl -fLo kubefed.tgz ${KUBEFED_KUBEFEDCTL_BASE_URL}/${KUBEFED_KUBEFEDCTL_VERSION}/kubefedctl-${OS}-amd64.tgz &> ${REDIR}
-        tar xvzf $(pwd)/kubefed.tgz
-        sudocmd install $(pwd)/kubefedctl /usr/local/bin/
-        rm $(pwd)/kubefedctl.tgz &> ${REDIR} || true
+        curl -fLo kubefedctl-${OS}-amd64.tgz ${KUBEFED_KUBEFEDCTL_BASE_URL}/${KUBEFED_KUBEFEDCTL_VERSION}/kubefedctl-${OS}-amd64.tgz &> ${REDIR}
+        tar xvzf $(pwd)/kubefedctl-${OS}-amd64.tgz
+        sudocmd install $(pwd)/kubefedctl-${OS}-amd64 /usr/local/bin/
+        sudocmd ln -s /usr/local/bin/kubefedctl-${OS}-amd64 /usr/local/bin/kubefedctl
+        rm $(pwd)/kubefedctl-${OS}-amd64.tgz &> ${REDIR} || true
         rm $(pwd)/kubefedctl &> ${REDIR} || true
     fi
 }
