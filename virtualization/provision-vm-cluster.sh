@@ -21,6 +21,7 @@ function __set_variables {
     __set_ha_defaults
     __set_kubernetes_defaults
     __set_cni_defaults
+    __set_kubefed_defaults
     __set_kubevirt_defaults
     __set_metallb_defaults
     __set_helm_defaults
@@ -1804,6 +1805,99 @@ function helm_deploy {
     helm repo update &> ${REDIR}
 }
 
+### KUBEFED CONFIGURATION
+
+IFS='' read -r -d '\0' KUBEFED_HELP <<"EOL"
+KUBEFED_VERSION
+  Description: specifies the version to use for kubevirt (virt-api / virt-controller / virt-handler)
+  Default: ${DEFAULT_KUBEFED_VERSION}
+  Example: KUBEFED_VERSION=0.1.0-rc3
+  Current: KUBEFED_VERSION=${KUBEFED_VERSION}
+
+KUBEFED_KUBEFEDCTL_VERSION
+  Description: specifies the version of kubefedctl to download/install
+  Default: ${DEFAULT_KUBEFED_KUBEFEDCTL_VERSION}
+  Example: KUBEFED_KUBEFEDCTL_VERSION=0.1.0-rc3
+  Current: KUBEFED_KUBEFEDCTL_VERSION=${KUBEFED_KUBEFEDCTL_VERSION}
+
+KUBEFED_IMAGE_REPOSITORY
+  Description: specifies the docker repository to use for kubefed images
+  Default: ${DEFAULT_KUBEFED_IMAGE_REPOSITORY}
+  Example: KUBEFED_IMAGE_REPOSITORY=quay.io/kubernetes-multicluster
+  Current: KUBEFED_IMAGE_REPOSITORY=${KUBEFED_IMAGE_REPOSITORY}
+
+KUBEFED_KUBEFEDCTL_BASE_URL
+  Description: specifies the base url to use when downloading kubefedctl
+  Default: ${DEFAULT_KUBEFED_KUBEFEDCTL_BASE_URL}
+  Example: KUBEFED_KUBEFEDCTL_BASE_URL=0.1.0-rc3
+  Current: KUBEFED_KUBEFEDCTL_BASE_URL=${KUBEFED_KUBEFEDCTL_BASE_URL}
+
+KUBEFED_SYSTEM_NAMESPACE
+  Description: namespace to deploy the kubefed controller/webhook
+  Default: ${DEFAULT_KUBEFED_SYSTEM_NAMESPACE}
+  Example: KUBEFED_SYSTEM_NAMESPACE=kube-federation-system
+  Current: KUBEFED_SYSTEM_NAMESPACE=${KUBEFED_SYSTEM_NAMESPACE}
+\0
+EOL
+
+function __set_kubefed_defaults {
+    local DEFAULT_KUBEFED_IMAGE_REPOSITORY=${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/kubefed
+    local DEFAULT_KUBEFED_VERSION=0.1.0-rc3
+    local DEFAULT_KUBEFED_KUBEFEDCTL_VERSION=snaproute
+    local DEFAULT_KUBEFED_KUBEFEDCTL_BASE_URL=https://github.com/snaproute-mino/kubefed/releases/download
+    local DEFAULT_KUBEFED_SYSTEM_NAMESPACE=kube-federation-system
+
+    if [[ "${KUBEFED_IMAGE_REPOSITORY:-}" == "" ]]; then
+        KUBEFED_IMAGE_REPOSITORY=${DEFAULT_KUBEFED_IMAGE_REPOSITORY}
+    fi
+    if [[ "${KUBEFED_VERSION:-}" == "" ]]; then
+        KUBEFED_VERSION=${DEFAULT_KUBEFED_VERSION}
+    fi
+    if [[ "${KUBEFED_KUBEFEDCTL_VERSION:-}" == "" ]]; then
+        KUBEFED_KUBEFEDCTL_VERSION=${DEFAULT_KUBEFED_KUBEFEDCTL_VERSION}
+    fi
+    if [[ "${KUBEFED_KUBEFEDCTL_BASE_URL:-}" == "" ]]; then
+        KUBEFED_KUBEFEDCTL_BASE_URL=${DEFAULT_KUBEFED_KUBEFEDCTL_BASE_URL}
+    fi
+    if [[ "${KUBEFED_SYSTEM_NAMESPACE:-}" == "" ]]; then
+        KUBEFED_SYSTEM_NAMESPACE=${DEFAULT_KUBEFED_SYSTEM_NAMESPACE}
+    fi
+
+    DEFAULTS_KUBEFED=$( eval "echo -e \"${KUBEFED_HELP//\"/\\\"}\"" )
+}
+
+function kubefed_bootstrap {
+    kubefed_dependencies
+    if [[ "${DEPENDENCIES_ONLY}" == "true" ]]; then
+        return 0
+    fi
+    kubefed_deploy
+}
+
+function kubefed_dependencies {
+    if [[ ! -f $(which kubefedctl || true) || "${FULL_INSTALL}" == "true" ]]; then
+        >&2 echo "Installing kubefedctl"
+        curl -fLo kubefed.tgz ${KUBEFED_KUBEFEDCTL_BASE_URL}/${KUBEFED_KUBEFEDCTL_VERSION}/kubefedctl-${OS}-amd64.tgz &> ${REDIR}
+        tar xvzf $(pwd)/kubefed.tgz
+        sudocmd install $(pwd)/kubefedctl /usr/local/bin/
+        rm $(pwd)/kubefedctl.tgz &> ${REDIR} || true
+        rm $(pwd)/kubefedctl &> ${REDIR} || true
+    fi
+}
+
+function kubefed_deploy {
+    echo "Deploying kubefed"
+    helm repo add kubefed-charts https://raw.githubusercontent.com/kubernetes-sigs/kubefed/master/charts &> ${REDIR}
+    helm repo update &> ${REDIR}
+    helm upgrade \
+        --install kubefed \
+        kubefed-charts/kubefed \
+        --version ${KUBEFED_VERSION} \
+        --namespace ${KUBEFED_SYSTEM_NAMESPACE} \
+        --set "controllermanager.repository=${KUBEFED_IMAGE_REPOSITORY}" \
+        --set "controllermanager.replicaCount=2"
+}
+
 ### KUBEVIRT CONFIGURATION
 
 IFS='' read -r -d '\0' KUBEVIRT_HELP <<"EOL"
@@ -2997,6 +3091,13 @@ cni (container networking):
 helm:
     HELM_VERSION: ${HELM_VERSION}
 
+kubefed:
+    KUBEFED_VERSION: ${KUBEFED_VERSION}
+    KUBEFED_KUBEFEDCTL_VERSION: ${KUBEFED_KUBEFEDCTL_VERSION}
+    KUBEFED_IMAGE_REPOSITORY: ${KUBEFED_IMAGE_REPOSITORY}
+    KUBEFED_KUBEFEDCTL_BASE_URL: ${KUBEFED_KUBEFEDCTL_BASE_URL}
+    KUBEFED_SYSTEM_NAMESPACE: ${KUBEFED_SYSTEM_NAMESPACE}
+
 kubevirt:
     KUBEVIRT_VERSION: ${KUBEVIRT_VERSION}
     KUBEVIRT_VIRTCTL_VERSION: ${KUBEVIRT_VIRTCTL_VERSION}
@@ -3034,6 +3135,8 @@ function bootstrap {
     cni_bootstrap
 
     helm_bootstrap
+
+    kubefed_bootstrap
 
     kubevirt_bootstrap
 
