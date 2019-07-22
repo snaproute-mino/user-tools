@@ -1,157 +1,46 @@
 # SnapRoute CN-NOS Virtualization
 
-## Provisioning a single node Kubernetes cluster with virtualization dependencies (on an Ubuntu 18.04 system)
+## Provisioning a single node Kubernetes cluster with virtualization dependencies 
+
+The following instructions were preformed on a bare metal Ubuntu 18.04 fresh installation.  We recommend using a bare metal installation for optimal results.
+
+This virtual version of CN-NOS is intended for evaluation and reference only - it is not designed or supported for any production or pseudo-production workloads.
 
 1) Download the provisioning script
 
-    curl -Lo provision-vm-cluster.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/v1.0.0/virtualization/provision-vm-cluster.sh
-
 ```
-server41@server41:~$ curl -Lo provision-vm-cluster.sh https://github.com/snaproute-mino/user-tools/blob/v1.0.0/virtualization/provision-vm-cluster.sh
+ubuntu@server:~$ curl -Lo provision-vm-cluster.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/v1.0.0/virtualization/provision-vm-cluster.sh
+
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
 100 82963  100 82963    0     0   275k      0 --:--:-- --:--:-- --:--:--  275k
-server41@server41:~$ 
+
 ```
 
 2) Make the script executable
-    chmod +x provision-vm-cluster.sh
 
 ```
-server41@server41:~$ chmod +x provision-vm-cluster.sh 
-server41@server41:~$ 
+ubuntu@server:~$ chmod +x provision-vm-cluster.sh 
 ```
 
 3) Run the provisioning script
-    BOOTSTRAPPER=kubeadm ./provision-vm-cluster.sh
 
 ```
-server41@server41:~$ DEBUG=true BOOTSTRAPPER=kubeadm ./provision-vm-cluster.sh 
-host info:
-    OS: linux
-    OS_DISTRIBUTOR: Ubuntu
-    HOSTNAME: server41
-    DEFAULT_INTERFACE: bond0
-    DEFAULT_INTERFACE_IP: 192.168.100.41
+ubuntu@server:~$ DEBUG=true BOOTSTRAPPER=kubeadm ./provision-vm-cluster.sh 
+```
+Note: You can remove the "DEBUG=true" output if you wish to obscure the step-by-step process that the script is taking.
 
+After some detailed output, you will be presented with this prompt to proceed
 
-# PROVISIONING CONFIGURATION
-
-bootstrapper:
-    DEBUG: false
-    BOOTSTRAPPER: kubeadm
-    BOOTSTRAPPER_DOCKER_REGISTRY: repo.snaproute.com
-    DEPENDENCIES_ONLY: false
-
-cluster:
-    CLUSTER_CONTROLPLANE_ENDPOINT: 192.168.100.41:6443
-    CLUSTER_ID: 41
-    CLUSTER_LB_VM_CIDR: 10.41.0.0/18
-    CLUSTER_LB_DEFAULT_CIDR: 10.41.64.0/18
-    CLUSTER_POD_CIDR: 10.41.128.0/18
-    CLUSTER_SERVICE_CIDR: 10.41.192.0/18
-
-ha (heartbeat / haproxy):
-    HA_CONTROLPLANE_NODES: 
-    HA_HEARTBEAT_AUTH_MD5SUM: 853ae90f0351324bd73ea615e6487517
-    HA_HEARTBEAT_MCAST_GROUP: 225.0.0.1
-    HA_HEARTBEAT_UDP_PORT: 694
-
-kubernetes:
-    KUBERNETES_VERSION: v1.14.1
-    KUBERNETES_IMAGE_REPOSITORY: k8s.gcr.io
-    KUBERNETES_CONTROLPLANE_ENDPOINT: 192.168.100.41:6443
-    KUBERNETES_APISERVER_LOCAL_BIND_PORT: 6443
-    KUBERNETES_POD_CIDR: 10.41.128.0/18
-    KUBERNETES_SERVICE_CIDR: 10.41.192.0/18
-    KUBERNETES_OIDC_ISSUER_URL: https://accounts.google.com
-    KUBERNETES_OIDC_CLIENT_ID: 
-
-minikube (only applicable if bootstrapper is minikube):
-    MINIKUBE_CPUS: 4
-    MINIKUBE_MEMORY: 8192
-    MINIKUBE_DISK_SIZE: 20g
-    MINIKUBE_VM_DRIVER: kvm2
-    MINIKUBE_REGISTRY_NODEPORT: 
-
-cni (container networking):
-    CNI_PLUGINS_VERSION: v0.4
-    CNI_PLUGINS_IMAGE_REPOSITORY: repo.snaproute.com/vm-infra/cni
-    CNI_MULTUS_VERSION: latest
-    CNI_MULTUS_IMAGE_REPOSITORY: repo.snaproute.com/vm-infra/cni
-    CNI_FLANNEL_VERSION: v0.11.0
-    CNI_FLANNEL_IMAGE_REPOSITORY: repo.snaproute.com/vm-infra/quay.io/coreos
-
-helm:
-    HELM_VERSION: v2.11.0
-
-kubevirt:
-    KUBEVIRT_VERSION: v0.16.0-snaproute
-    KUBEVIRT_VIRTCTL_VERSION: v0.16.0
-    KUBEVIRT_IMAGE_REPOSITORY: repo.snaproute.com/vm-infra/kubevirt
-    KUBEVIRT_SOFTWARE_EMULATION: false
-
-metallb (load-balancer for kubernetes services, only applicable if METALLB_PEER_ADDRESS is set):
-    METALLB_VERSION: v0.9.4
-    METALLB_PEER_ADDRESS: 
-    METALLB_PEER_ASN: 65500
-    METALLB_LOCAL_ASN: 65501
-    METALLB_POOL_DEFAULT_CIDR: 10.41.64.0/18
-    METALLB_POOL_VM_CIDR: 10.41.0.0/18
-    METALLB_COMMUNITY_NOADVERTISE: 65535:65282
-
-bootstrapping with kubeadm on linux with OIDC disabled
+```
 Proceed with installation/provisioning? [yes or no]: yes
-installing/downloading kubeadm dependencies
-Installing kvm2
-Synchronizing state of libvirtd.service with SysV service script with /lib/systemd/systemd-sysv-install.
-Executing: /lib/systemd/systemd-sysv-install enable libvirtd
-Enabling nested virtualization in kvm2
-Installing docker
-Installing kubeadm
-Installing kubectl
-Populating additional files
-Running kubeadm initialization
-Installing flannel networking
-Installing cni-plugins / multus networking
-Installing helm
-Deploying helm
-Installing virtctl
-Deploying kubevirt
-bootstrapping complete
-Your Kubernetes control-plane has initialized successfully!
 
-To start using your cluster, you need to run the following as a regular user:
-
-  mkdir -p $HOME/.kube
-  sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-  sudo chown $(id -u):$(id -g) $HOME/.kube/config
-
-You should now deploy a pod network to the cluster.
-Run "kubectl apply -f [podnetwork].yaml" with one of the options listed at:
-  https://kubernetes.io/docs/concepts/cluster-administration/addons/
-
-You can now join any number of the control-plane node running the following command on each as root:
-
-  kubeadm join 192.168.100.41:6443 --token abcdef.0123456789abcdef \
-    --discovery-token-ca-cert-hash sha256:f3da5a71974d95aca58e9e4d7e7b737da88ce711b6f7608008e3210b77e9e2bd \
-    --experimental-control-plane --certificate-key b8f812b213f3f580fee8984bcc7b57d1def9a3b021ac7a3dbac628f88e8e7dd6
-
-Please note that the certificate-key gives access to cluster sensitive data, keep it secret!
-As a safeguard, uploaded-certs will be deleted in two hours; If necessary, you can use 
-"kubeadm init phase upload-certs --experimental-upload-certs" to reload certs afterward.
-
-Then you can join any number of worker nodes by running the following on each as root:
-
-kubeadm join 192.168.100.41:6443 --token abcdef.0123456789abcdef \
-    --discovery-token-ca-cert-hash sha256:f3da5a71974d95aca58e9e4d7e7b737da88ce711b6f7608008e3210b77e9e2bd 
 ```
 
 4) Verify all pods are running
-    kubectl get pod --all-namespaces
 
 ```
-server41@server41:~$ kubectl get pod --all-namespaces
+ubuntu@server:~$ kubectl get pod --all-namespaces
 NAMESPACE     NAME                               READY   STATUS    RESTARTS   AGE
 kube-system   coredns-fb8b8dccf-ghb9t            1/1     Running   0          3m33s
 kube-system   coredns-fb8b8dccf-xrf8l            1/1     Running   0          3m33s
@@ -170,16 +59,27 @@ kubevirt      virt-controller-7dc5f5b56d-xrhhx   1/1     Running   0          3m
 kubevirt      virt-handler-t2h5x                 1/1     Running   0          3m5s
 ```
 
-## Kubernetes cluster access
+## Kubernetes Cluster Access
 
-Kubernetes provides a number of options for authenticating users.  This document will provide a simple example of creating serviceaccounts for users.
+Kubernetes provides a number of options for authenticating users.  
 
-Generally, it is recommended to deploy an OIDC provider (like coreos/dex) to integrate with your existing authentication infrastructure (such as LDAP).  This is outside the scope of this document.  Additional info can be found at [[https://kubernetes.io/docs/reference/access-authn-authz/authentication/#users-in-kubernetes]]
+For production Kubernetes clusters, it is recommended to deploy an OIDC provider (like coreos/dex) to integrate with your existing authentication infrastructure (such as LDAP).  This is outside the scope of this document.  Additional info can be found at [[https://kubernetes.io/docs/reference/access-authn-authz/authentication/#users-in-kubernetes]]
+
+Below we provide a simple example of creating serviceaccounts for users - which will allow for remote/local access of the Kubernetes cluster.
 
 1) Create a namespace / service account / rbac role / rbac rolebinding for a new user (run this on the server you provisioned)
 
+For this example, we will create a new user:
+
+john.smith@snaproute.com
+
+Substitute "john.smith@snaproute.com" below with the appropriate user info.
+
+Cut and paste these lines onto the shell of the host running your Kubernetes cluster:
+
 ```
-USER_EMAIL=john.doe@test
+ubuntu@server:~$ 
+USER_EMAIL=john.smith@snaproute.com
 NAME=${USER_EMAIL//@*/}
 DOMAIN=${USER_EMAIL//*@/}
 cat <<EOL | kubectl apply -f -
@@ -217,12 +117,27 @@ roleRef:
   name: ${NAME}.${DOMAIN}
   apiGroup: rbac.authorization.k8s.io
 EOL
+ubuntu@server:~$ 
+```
+You should see output similar to this after pasting in the above:
+
+```
+namespace/johnsmith created
+serviceaccount/john.smith.snaproute.com created
+role.rbac.authorization.k8s.io/john.smith.snaproute.com created
+rolebinding.rbac.authorization.k8s.io/john.smith.snaproute.com created
 ```
 
 2) Generate a kubeconfig file for the user
 
+Substitute "john.smith@snaproute.com" below with the appropriate user info.
+
+Cut and paste these lines onto the shell of the host running your Kubernetes cluster:
+
 ```
-USER_EMAIL=john.doe@test
+ubuntu@server:~$ 
+
+USER_EMAIL=john.smith@snaproute.com
 NAME=${USER_EMAIL//@*/}
 NAMESPACE=${NAME//.}
 DOMAIN=${USER_EMAIL//*@/}
@@ -254,157 +169,264 @@ KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-context ${CONTEXT_NAME} \
         --namespace ${NAMESPACE}
 
 KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config use-context ${CONTEXT_NAME}
+
+ubuntu@server:~$ 
 ```
 
-3) Copy the generated kubeconfig file to the machine / user home directory that you'd like to use when remotely accessing the cluster
+You should see that the context has switched after running the above:
 
 ```
-USERNAME=jdoe
+Switched to context "john.smith.cnnos-cluster".
+```
+
+3) If you are going to be accessing the Kubernetes cluster remotely, you will need to copy the generated kubeconfig file to the target user home directory on that host.
+
+This step can be skipped if you will only be accessing the Kubernetes cluster locally - on the host it was provisioned on.
+
+Substitute "jsmith" below with the appropriate user info.
+Substitute "192.168.0.10" with the IP of the target host that will be used to access the cluster.
+
+Cut and paste these lines onto the shell of the host running your Kubernetes cluster:
+
+```
+ubuntu@server:~$ 
+USERNAME=jsmith
 USER_IP=192.168.0.10
 KUBE_DIR=/home/${USERNAME}/.kube/
 ssh ${USERNAME}@${USER_IP} mkdir -p ${KUBE_DIR}
 scp ./kubeconfig ${USERNAME}@${USER_IP}:${KUBE_DIR}/config
+ubuntu@server:~$ 
 ```
 
-## Installing user tools to local laptop / server
+## Installing User Tools to Local Host
+
+If accessing the Kubernetes cluster remotely, follow these steps to prepare that host to access the cluster.
+
+This section can be skipped if you will only be accessing the Kubernetes cluster locally - on the host it was provisioned on.
 
 1) Download the user tools installation script
 
 ```
-curl -Lo user-tools-install.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/master/user-tools-install.sh
+ubuntu@host:~$ curl -Lo user-tools-install.sh https://raw.githubusercontent.com/snaproute-mino/user-tools/master/user-tools-install.sh
 ```
 
 2) Make the script executable
 
 ```
-chmod +x user-tools-install.sh
+ubuntu@host:~$ chmod +x user-tools-install.sh
 ```
 
 3) Run the user tools installation
 
 ```
-./user-tools-install.sh
+ubuntu@host:~$ ./user-tools-install.sh
 ```
 
 4) Verify you can access the cluster using kubectl and the kubeconfig you generated
 
 ```
-kubectl get sa
+ubuntu@host:~$ kubectl get sa
 ```
 
-## Request an account for access to CN-NOS release images
+## Setup Account Access For CN-NOS Release Images
 
-1) Contact your sales representation or email info@snaproute.com to request an account
+1) Contact your SnapRoute representative or email info@snaproute.com to request an account to the SnapRoute image repo
 
-2) Create an image pull secret for the account provided in step 1 (this should be created in the namespace that you'll be deploying cnnos-topologies)
+For this example, we will use these credentials:
+
+Userid: 		john.smith@snaproute.com
+Password:		Sample_Password_1234 	
+
+These examples need to be substituted below with the username/password provided to you by SnapRoute.
+
+2) Create an image pull secret for the account provided in step 1
+
+Substitute docker-username, docker-email, and docker-password with those provided and cut and paste these lines:
 
 ```
+ubuntu@server:~$ 
 kubectl create secret docker-registry snaproute-pull-secret \
 --docker-server=repo.snaproute.com \
---docker-username=john.doe@customer.local \
---docker-email=john.doe@customer.local \
---docker-password=PasswordProvided
+--docker-username=john.smith@snaproute.com \
+--docker-email=john.smith@snaproute.com \
+--docker-password=Sample_Password_1234
+ubuntu@server:~$ 
+```
+You should see a message like this:
+
+```
+secret/snaproute-pull-secret created
 ```
 
-## Deploying an onie-http server for hosting cn-nos monolithic image to ONIE VMs
+## Deploying an onie-http Server For Hosting the CN-NOS Monolithic Image to ONIE VMs
 
 1) Add the cn-nos release repo
 
+Substitute the username and password to those used in the previous section.
+
 ```
-helm repo add cnnos-release --username="john.doe@customer.local" --password="PasswordProvided" https://repo.snaproute.com/chartrepo/release
+ubuntu@server:~$ helm repo add cnnos-release --username="john.smith@snaproute.com" --password="Sample_Password_1234" https://repo.snaproute.com/chartrepo/release
+```
+You should see a message like this, after the repo is added:
+```
+"cnnos-release" has been added to your repositories
 ```
 
 2) Perform a repo update to ensure you have access to the latest charts
 
 ```
-helm repo update
+ubuntu@server:~$ helm repo update
+```
+You should see output similar to below:
+```
+Hang tight while we grab the latest from your chart repositories...
+...Skip local chart repository
+...Successfully got an update from the "stable" chart repository
+...Successfully got an update from the "cnnos-release" chart repository
+Update Complete. ⎈ Happy Helming!⎈ 
 ```
 
 3) List the available monolithic releases
 
 ```
-helm search cnnos-release/cnnos-monolithic --versions
+ubuntu@server:~$ helm search cnnos-release/cnnos-monolithic --versions
+
+NAME                          	CHART VERSION	APP VERSION	DESCRIPTION                
+cnnos-release/cnnos-monolithic	v1.1.0-R15   	v1.1.0-R15 	A Helm chart for Kubernetes
+
 ```
 
 4) Download the desired version chart
 
+For this example, we are copying the "v1.1.0-R15" version listed in the search results and setting it to VERSION variable below.
+
+Copy these lines to fetch the image:
+
 ```
+ubuntu@server:~$ 
 VERSION=v1.1.0-R15
 helm fetch cnnos-release/cnnos-monolithic --version ${VERSION}
 ```
 
-5) Deploy an onie-http server instance to host the desired CN-NOS monolithic image (referencing the imagePullSecret created earlier)
+5) Deploy an onie-http server instance to host the CN-NOS monolithic image
 
 ```
+ubuntu@server:~$ 
 PULL_SECRET=snaproute-pull-secret
 VERSION=v1.1.0-R15
 helm template --name onie-http-server --set imagePullSecret=${PULL_SECRET} cnnos-monolithic-${VERSION}.tgz | kubectl create -f -
 ```
 
-6) Verify the server is running (this may take some time in ContainerCreating as the monolithic image is downloaded)
+After this, you should see output similar to this:
 
 ```
-pferrell@pferrell-lnx:~$ kubectl get pod
+service/onie-http-server-cnnos-monolithic created
+deployment.apps/onie-http-server-cnnos-monolithic created
+```
+
+6) Verify the server is running 
+
+Note: As the monolithic image is downloaded - the status will stay in "ContainerCreating" for several minutes.
+
+```
+ubuntu@server:~$ kubectl get pod
+NAME                                                 READY   STATUS              RESTARTS   AGE
+onie-http-server-cnnos-monolithic-75b986b495-7cf4m   0/1     ContainerCreating   0          73s
+```
+
+```
+ubuntu@server:~$ kubectl get pod
 NAME                                                 READY   STATUS    RESTARTS   AGE
-onie-http-server-cnnos-monolithic-75b986b495-zb9hj   1/1     Running   0          10m
+onie-http-server-cnnos-monolithic-75b986b495-7cf4m   1/1     Running   0          2m38s
 
-pferrell@pferrell-lnx:~$ kubectl get service -o wide
-NAME                                TYPE        CLUSTER-IP     EXTERNAL-IP   PORT(S)   AGE   SELECTOR
-onie-http-server-cnnos-monolithic   ClusterIP   10.41.225.99   <none>        80/TCP    10m   app.kubernetes.io/instance=onie-http-server,app.kubernetes.io/name=cnnos-monolithic
-
+ubuntu@server:~$ kubectl get service -o wide
+NAME                                TYPE        CLUSTER-IP      EXTERNAL-IP   PORT(S)   AGE     SELECTOR
+kubernetes                          ClusterIP   10.254.192.1    <none>        443/TCP   103m    <none>
+onie-http-server-cnnos-monolithic   ClusterIP   10.254.244.11   <none>        80/TCP    3m20s   app.kubernetes.io/instance=onie-http-server,app.kubernetes.io/name=cnnos-monolithic
 ```
 
-## Deploy a VM topology referencing the onie-http server / image you deployed
+## Deploy a VM Topology Using the ONIE Server & Image Deployed
 
-1) Add the cnnos-virtualization repo
+1) Add the cnnos-virtualization repo to helm to pull the necessary charts
 
 ```
-helm repo add cnnos-virtualization https://repo.snaproute.com/chartrepo/virtualization
+ubuntu@server:~$ helm repo add cnnos-virtualization https://repo.snaproute.com/chartrepo/virtualization
+```
+
+You should see output similar to this:
+
+```
+"cnnos-virtualization" has been added to your repositories
+
 ```
 
 2) Perform a repo update to ensure you have access to the latest charts
 
 ```
-helm repo update
+ubuntu@server:~$ helm repo update
+```
+You should see output similar to this:
+
+```
+Hang tight while we grab the latest from your chart repositories...
+...Skip local chart repository
+...Successfully got an update from the "stable" chart repository
+...Successfully got an update from the "cnnos-release" chart repository
+...Successfully got an update from the "cnnos-virtualization" chart repository
+Update Complete. ⎈ Happy Helming!⎈ 
 ```
 
-3) List the available monolithic releases
+3) List the available topology charts
 
 ```
-helm search cnnos-virtualization
+ubuntu@server:~$ helm search cnnos-virtualization
+NAME                                 	CHART VERSION	APP VERSION	DESCRIPTION                                                 
+cnnos-virtualization/clos-2x3        	v1.0.1       	v1.0.1     	clos topology with 2 spines, 3 leafs                        
+cnnos-virtualization/cnnos-cluster   	v0.1.1       	v0.1.1     	A Helm chart for Kubernetes                                 
+cnnos-virtualization/dhcp-server     	v1.0.1       	v1.0.1     	provides a dhcp server for onie bootstrapping               
+cnnos-virtualization/node            	v1.0.1       	v1.0.1     	single node with port 1-4 connected to 5-8                  
+cnnos-virtualization/node2node       	v1.0.1       	v1.0.1     	back to back node topology, containing only 2 nodes         
+cnnos-virtualization/onie-services   	v1.0.1       	v1.0.1     	provides a simple deployment of services for onie boot/in...
+cnnos-virtualization/topology-builder	v1.0.1       	v1.0.1     	Base chart that provides a way to quickly create network ...
+cnnos-virtualization/ubuntu-vm       	v0.1.1       	v0.1.1     	A Helm chart for Kubernetes       
 ```
 
 4) Download the desired version chart
 
+From the above list, we are going to use this option:
+
 ```
+cnnos-virtualization/node2node       	v1.0.1       	v1.0.1     	back to back node topology, containing only 2 nodes         
+```
+
+Run these commands to fetch this topology chart
+
+```
+ubuntu@server:~$ 
 TOPOLOGY=node2node
-VERSION=v1.0.0
+VERSION=v1.0.1
 helm fetch cnnos-virtualization/${TOPOLOGY} --version ${VERSION}
 ```
 
-5) Deploy the chart referencing the service IP of the onie-http-server you deployed (CHART_FILE should reference the location where you fetched it in previous step)
+5) Deploy the chart 
+
+Copy and paste these lines to deploy the chart:
 
 ```
+ubuntu@server:~$ 
 TOPOLOGY=node2node
-VERSION=v1.0.0
+VERSION=v1.0.1
 CHART_FILE=${TOPOLOGY}-${VERSION}.tgz
 TOPOLOGY_NAME=my-topology
 CLUSTER_IP=$(kubectl get service onie-http-server-cnnos-monolithic -o jsonpath="{.spec.clusterIP}")
 
 helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/monolithic/onie-installer-x86_64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
+ubuntu@server:~$
 ```
 
+You should see output similar to this:
+
 ```
-pferrell@pferrell-lnx:~$ TOPOLOGY=node2node
-pferrell@pferrell-lnx:~$ VERSION=v1.0.0
-pferrell@pferrell-lnx:~$ helm fetch cnnos-virtualization/${TOPOLOGY} --version ${VERSION}
-pferrell@pferrell-lnx:~$ TOPOLOGY=node2node
-pferrell@pferrell-lnx:~$ VERSION=v1.0.0
-pferrell@pferrell-lnx:~$ CHART_FILE=${TOPOLOGY}-${VERSION}.tgz
-pferrell@pferrell-lnx:~$ TOPOLOGY_NAME=my-topology
-pferrell@pferrell-lnx:~$ CLUSTER_IP=$(kubectl get service onie-http-server-cnnos-monolithic -o jsonpath="{.spec.clusterIP}")
-pferrell@pferrell-lnx:~$ 
-pferrell@pferrell-lnx:~$ helm template --name ${TOPOLOGY_NAME} ${CHART_FILE} --set "topology-builder.dhcpOptions.privateOptions[0].value=http://${CLUSTER_IP}/monolithic/onie-installer-x86_64" --set "topology-builder.dhcpOptions.privateOptions[0].option=114" | kubectl create -f -
 configmap/my-topology-topology created
 deployment.extensions/my-topology.topology created
 networkattachmentdefinition.k8s.cni.cncf.io/my-topology-switch1-p2-switch2-p2-conf created
@@ -435,82 +457,59 @@ virtualmachineinstancepreset.kubevirt.io/my-topology-onie-8core-32g created
 virtualmachineinstancepreset.kubevirt.io/my-topology-default created
 ```
 
+
 6) Verify the VMs are deployed and running
 
 ```
-kubectl get vm
+ubuntu@server:~$ kubectl get vm
 
-kubectl get vmi
+ubuntu@server:~$ kubectl get vmi
 
-kubectl get pod
+ubuntu@server:~$ kubectl get pod
 
-pferrell@pferrell-lnx:~$ kubectl get vm
+ubuntu@server:~$ kubectl get vm
+NAME                  AGE     RUNNING   VOLUME
+my-topology-switch1   9m41s   true      
+my-topology-switch2   9m41s   true     
+ 
+ubuntu@server:~$ kubectl get vm
 NAME                  AGE   RUNNING   VOLUME
-my-topology-switch1   52s   true      
-my-topology-switch2   52s   true      
+my-topology-switch1   12s   Scheduling      
+my-topology-switch2   12s   Scheduling      
 
-
-pferrell@pferrell-lnx:~$ kubectl get vmi
-NAME                  AGE   PHASE        IP    NODENAME
-my-topology-switch1   19s   Scheduling         
-my-topology-switch2   19s   Scheduling  
-
-pferrell@pferrell-lnx:~$ kubectl get vmi
+ubuntu@server:~$ kubectl get vmi
 NAME                  AGE   PHASE     IP              NODENAME
-my-topology-switch1   54s   Running   10.41.128.236   server41
-my-topology-switch2   54s   Running   10.41.128.237   server41
+my-topology-switch1   14m   Running   10.254.128.12   server
+my-topology-switch2   14m   Running   10.254.128.13   server
 
-pferrell@pferrell-lnx:~$ kubectl get pod
+ubuntu@server:~$ kubectl get pod
 NAME                                                 READY   STATUS    RESTARTS   AGE
-my-topology.topology-87c555694-9hjrk                 1/1     Running   0          47s
-onie-http-server-cnnos-monolithic-75b986b495-zb9hj   1/1     Running   0          2m40s
-virt-launcher-my-topology-switch1-zp7tx              2/2     Running   0          47s
-virt-launcher-my-topology-switch2-2cczj              2/2     Running   0          46s
+my-topology.topology-6fb765b7df-m4n9v                1/1     Running   0          15m
+onie-http-server-cnnos-monolithic-75b986b495-7cf4m   1/1     Running   0          27m
+virt-launcher-my-topology-switch1-pphc5              2/2     Running   0          15m
+virt-launcher-my-topology-switch2-66dfm              2/2     Running   0          15m
+
+ubuntu@server:~$ 
+
 ```
 
-7) Console to a switch and onie installation can be observed (console command will wait until VMI is running)
+When all of the pods show a "Running" status, you can proceed.
+
+7) Console to a switch and onie installation can be observed 
+
+Note: The console command will wait until VMI is running.
 
 ```
-pferrell@pferrell-lnx:~$ virtctl console my-topology-switch1
+ubuntu@server:~$ virtctl console my-topology-switch1
 Successfully connected to my-topology-switch1 console. The escape sequence is ^]
 
 ONIE: OS Install Mode ...
 Platform  : x86_64-kvm_x86_64-r0
 Version   : master-201903271045-dirty
 Build Date: 2019-03-27T10:45+00:00
-Info: Mounting kernel filesystems... done.
-Info: Mounting ONIE-BOOT on /mnt/onie-boot ...
-Info: BIOS mode: legacy
-Running demonstration platform init pre_arch routines...
-Running demonstration platform init post_arch routines...
-Info: Making NOS install boot mode persistent.
-Installing for i386-pc platform.
-Installation finished. No error reported.
-network_driver: Running demonstration pre_init routines...
-network_driver: Running ASIC/SDK init routines...
-network_driver: Running demonstration post_init routines...
-Info: Using eth0 MAC address: 02:bb:26:87:c4:05
-Info: Using eth1 MAC address: 7a:2f:28:f3:cd:24
-Info: eth0:  Checking link... up.
-Info: Trying DHCPv4 on interface: eth0
-ONIE: Using DHCPv4 addr: eth0: 10.41.128.246 / 255.255.255.0
-Info: eth1:  Checking link... up.
-Info: Trying DHCPv4 on interface: eth1
-Warning: Unable to configure interface using DHCPv4: eth1
-ONIE: Using link-local IPv4 addr: eth1: 169.254.42.218/16
-Starting: klogd... done.
-Starting: dropbear ssh daemon... done.
-Starting: telnetd... done.
-discover: installer mode detected.  Running installer.
-Starting: discover... done.
 
-Please press Enter to activate this console. Info: eth0:  Checking link... up.
-Info: Trying DHCPv4 on interface: eth0
-ONIE: Using DHCPv4 addr: eth0: 10.41.128.246 / 255.255.255.0
-Info: eth1:  Checking link... up.
-Info: Trying DHCPv4 on interface: eth1
-Warning: Unable to configure interface using DHCPv4: eth1
-ONIE: Using link-local IPv4 addr: eth1: 169.254.165.95/16
+<snip>
+
 ONIE: Starting ONIE Service Discovery
 Info: Attempting http://10.41.225.99/monolithic/onie-installer-x86_64 ...
 ONIE: Executing installer: http://10.41.225.99/monolithic/onie-installer-x86_64
@@ -521,10 +520,87 @@ Install mode [ ? ]. Progress: 22%
 
 Loading SNAPL ...
 starting version 234
+```
+
+8) The console of each switch can be accessed with the virtctl command
+
+Note: The default user is "root" with no password
+
+```
+ubuntu@ip-172-31-23-254:~$ virtctl console my-topology-switch1
+Successfully connected to my-topology-switch1 console. The escape sequence is ^]
 
 CN_NOS CN-NOS-1.0.0 CN-NOS-unknown ttyS0
 
 CN-NOS-unknown login: root
-Welcome to CN-NOS
 root@CN-NOS-unknown:~# 
+```
+
+9) From the console of the virtual instance, the CLI can be accessed using the cncli command
+
+
+```
+root@CN-NOS-unknown:~# cncli
+Welcome, root().
+CN-NOS-unknown# 
+
+```
+
+From here, industry standard "?" and <tab> can be used to navigate the interface:
+
+```
+CN-NOS-unknown# ?
+Available completions :
+  bash                 GNU Bourne-Again SHell
+  cli                  
+  cnnos-install-mode   Force a clean onie install.
+  cnnos-update-pods    Update pods from a monolithic image download.
+  configure            Configure Switch
+  copy                 Copy switch configuration (from and to)
+  default              
+  exit                 Exit out ot cncli
+  kubectl              kubectl controls the Kubernetes cluster manager.
+  ping                 send ICMP ECHO_REQUEST to network hosts
+  ping6                send ICMP ECHO_REQUEST to network hosts
+  reboot               Reboot the system
+  show                 Show Desired / Running / Operational data
+  supportsave          Get all the info for debug support
+  |                    Output modifiers
+  <cr>                 
+
+```
+```
+CN-NOS-unknown# show ?
+Available completions :
+  bfd                
+  desired-config     Show Desired Configuration data
+  dhcp               
+  evpn               
+  fabric             
+  fluentdcollector   Returns the properties for a fluentdCollector instance - input, output, host, protocol, severity, database parameters, etc.
+  interface          
+  ip                 
+  ip6                
+  ipsg               Provides IP source guard information
+  ipv4interface      Returns information about a named interface including up and down time events, operational states, the VRF id.
+  ipv6interface      Returns information about a named interface including up and down time events, operational states, the VRF id.
+  lacpagg            Returns LACP aggregation statistics and LAG AdminState.
+  lacpaggport        Returns LACP Aggregation Port states and statistics.
+  lldpglobal         Returns information about LLDP enable/disable state, number of LLDP neighbors, system-wide LLDP Tx/Rx packets, and current transmit interval.
+  lldpinterface      Returns LLDP information at the port level. Information is returned by interface name.
+  mac                
+  policy-map         
+  protocol           
+  running-config     Show Running Configuration data
+  service            
+  span               
+  stp                
+  system             
+  v4route            Returns routing information about IPv4 routes installed on the system. Keyed by the VRF name and V4 prefix.
+  v6route            Returns routing information about IPv6 routes installed on the system. Keyed by the VRF name and V6 prefix
+  version            
+  vrf                Returns information (name and id) for each VRF in the system.
+  vxlantunnel        Vxlan Tunnel Information
+  |                  Output modifiers
+  <cr>               
 ```
