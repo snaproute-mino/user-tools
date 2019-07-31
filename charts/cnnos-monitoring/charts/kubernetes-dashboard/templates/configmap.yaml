@@ -1,0 +1,11 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+    helm.sh/chart: {{ include "kubernetes-dashboard.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  name: {{ include "kubernetes-dashboard.fullname" . }}-settings
+  namespace: {{ .Release.Namespace }}
+---

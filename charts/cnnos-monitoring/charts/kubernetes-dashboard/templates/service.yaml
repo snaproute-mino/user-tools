@@ -1,0 +1,38 @@
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.metricsName" . }}
+    helm.sh/chart: {{ include "kubernetes-dashboard.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  name: {{ include "kubernetes-dashboard.metricsFullName" . }}
+spec:
+  ports:
+    - port: 8000
+      targetPort: 8000
+  selector:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.metricsName" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---
+kind: Service
+apiVersion: v1
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+    helm.sh/chart: {{ include "kubernetes-dashboard.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  name: {{ include "kubernetes-dashboard.fullname" . }}
+spec:
+  type: {{ .Values.dashboard.service.type }}
+  ports:
+    - port: {{ .Values.dashboard.service.externalPort }}
+      targetPort: 8443
+{{- if eq .Values.dashboard.service.type "NodePort" }}
+      nodePort: {{ .Values.dashboard.service.externalPort }}
+{{- end }}
+  selector:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+---

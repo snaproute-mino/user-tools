@@ -1,0 +1,143 @@
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+    helm.sh/chart: {{ include "kubernetes-dashboard.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  name: {{ template "kubernetes-dashboard.fullname" . }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "kubernetes-dashboard.name" . }}
+        helm.sh/chart: {{ include "kubernetes-dashboard.chart" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+    spec:
+      containers:
+        - name: kubernetes-dashboard
+          image: {{ include "kubernetes-dashboard.image" . }}
+          imagePullPolicy: {{ .Values.dashboard.imageInfo.pullPolicy }}
+          ports:
+            - containerPort: 8443
+              protocol: TCP
+          args:
+            - --auto-generate-certificates
+            - --namespace={{ .Release.Namespace }}
+            # Uncomment the following line to manually specify Kubernetes API server Host
+            # If not specified, Dashboard will attempt to auto discover the API server and connect
+            # to it. Uncomment only if the default does not work.
+            # - --apiserver-host=http://my-address:port
+          volumeMounts:
+            - name: kubernetes-dashboard-certs
+              mountPath: /certs
+              # Create on-disk volume to store exec logs
+            - mountPath: /tmp
+              name: tmp-volume
+          livenessProbe:
+            httpGet:
+              scheme: HTTPS
+              path: /
+              port: 8443
+            initialDelaySeconds: 30
+            timeoutSeconds: 30
+      volumes:
+        - name: kubernetes-dashboard-certs
+          secret:
+            secretName: {{ include "kubernetes-dashboard.name" . }}-certs
+        - name: tmp-volume
+          emptyDir: {}
+      serviceAccountName: {{ template "kubernetes-dashboard.serviceAccountName" . }}
+{{- if .Values.dashboard.tolerations }}
+      tolerations:
+{{ toYaml .Values.dashboard.tolerations | indent 8 }}
+{{- end }}
+{{- if .Values.dashboard.affinity }}
+      affinity:
+{{ toYaml .Values.dashboard.affinity | indent 8 }}
+{{- end }}
+{{- if .Values.dashboard.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.dashboard.nodeSelector | indent 8 }}
+{{- end }}
+---
+kind: Deployment
+apiVersion: apps/v1
+metadata:
+  labels:
+    app.kubernetes.io/name: {{ include "kubernetes-dashboard.metricsFullName" . }}
+    helm.sh/chart: {{ include "kubernetes-dashboard.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+  name: {{ template "kubernetes-dashboard.metricsFullName" . }}
+spec:
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: {{ include "kubernetes-dashboard.metricsFullName" . }}
+      app.kubernetes.io/instance: {{ .Release.Name }}
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: {{ include "kubernetes-dashboard.metricsFullName" . }}
+        helm.sh/chart: {{ include "kubernetes-dashboard.chart" . }}
+        app.kubernetes.io/instance: {{ .Release.Name }}
+        app.kubernetes.io/managed-by: {{ .Release.Service }}
+    spec:
+      containers:
+        - name: dashboard-metrics-scraper
+{{- if .Values.metrics.extraArgs }}
+{{ toYaml .Values.metrics.extraArgs | indent 10 }}
+{{- end }}
+{{- if .Values.metrics.extraEnv }}
+        env:
+{{ toYaml .Values.metrics.extraEnv | indent 10 }}
+{{- end }}
+          image: {{ include "kubernetes-dashboard.metricsImage" . }}
+          imagePullPolicy: {{ .Values.metrics.imageInfo.pullPolicy }}
+          ports:
+            - containerPort: 8000
+              protocol: TCP
+          livenessProbe:
+            httpGet:
+              scheme: HTTP
+              path: /
+              port: 8000
+            initialDelaySeconds: {{ .Values.metrics.livenessProbe.initialDelaySeconds }}
+            timeoutSeconds: {{ .Values.metrics.livenessProbe.timeoutSeconds }}
+          volumeMounts:
+          - mountPath: /tmp
+            name: tmp-volume
+      serviceAccountName: {{ template "kubernetes-dashboard.serviceAccountName" . }}
+      resources:
+{{ toYaml .Values.metrics.resources | indent 10 }}
+{{- if .Values.metrics.pullSecrets }}
+      imagePullSecrets:
+      {{- range .Values.metrics.pullSecrets }}
+        - name: {{ . }}
+      {{- end }}
+{{- end }}
+      volumes:
+        - name: tmp-volume
+          emptyDir: {}
+{{- if .Values.metrics.tolerations }}
+      tolerations:
+{{ toYaml .Values.metrics.tolerations | indent 8 }}
+{{- end }}
+{{- if .Values.metrics.affinity }}
+      affinity:
+{{ toYaml .Values.metrics.affinity | indent 8 }}
+{{- end }}
+{{- if .Values.metrics.nodeSelector }}
+      nodeSelector:
+{{ toYaml .Values.metrics.nodeSelector | indent 8 }}
+{{- end }}

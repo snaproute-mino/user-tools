@@ -1,0 +1,6 @@
+#requirements.yaml
+dependencies:
+## mandatory (no tags, but can be overridden with condition
+- name: metrics-server
+  version: ">=0.1"
+  repository: "https://kubernetes-charts.storage.googleapis.com"
