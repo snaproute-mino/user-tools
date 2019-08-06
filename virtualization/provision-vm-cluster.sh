@@ -1864,7 +1864,10 @@ function __set_kubefed_defaults {
     if [[ "${KUBEFED_SYSTEM_NAMESPACE:-}" == "" ]]; then
         KUBEFED_SYSTEM_NAMESPACE=${DEFAULT_KUBEFED_SYSTEM_NAMESPACE}
     fi
-
+    if [[ "${KUBEFED_KUBEFEDCTL_URL:-}" == "" ]]; then
+        KUBEFED_KUBEFEDCTL_URL=${KUBEFED_KUBEFEDCTL_BASE_URL}/${KUBEFED_KUBEFEDCTL_VERSION}/kubefedctl-${KUBEFED_KUBEFEDCTL_VERSION}-${OS}-amd64.tgz
+    fi
+    KUBEFED_KUBEFEDCTL_FILE=${KUBEFED_KUBEFEDCTL_URL##*\/}
     DEFAULTS_KUBEFED=$( eval "echo -e \"${KUBEFED_HELP//\"/\\\"}\"" )
 }
 
@@ -1879,11 +1882,11 @@ function kubefed_bootstrap {
 function kubefed_dependencies {
     if [[ ! -f $(which kubefedctl || true) || "${FULL_INSTALL}" == "true" ]]; then
         >&2 echo "Installing kubefedctl"
-        curl -fLo kubefedctl-${OS}-amd64.tgz ${KUBEFED_KUBEFEDCTL_BASE_URL}/${KUBEFED_KUBEFEDCTL_VERSION}/kubefedctl-${OS}-amd64.tgz &> ${REDIR}
-        tar xvzf $(pwd)/kubefedctl-${OS}-amd64.tgz
-        sudocmd install $(pwd)/kubefedctl-${OS}-amd64 /usr/local/bin/
-        sudocmd ln -s /usr/local/bin/kubefedctl-${OS}-amd64 /usr/local/bin/kubefedctl
-        rm $(pwd)/kubefedctl-${OS}-amd64.tgz &> ${REDIR} || true
+        curl -fLo ${KUBEFED_KUBEFEDCTL_FILE} ${KUBEFED_KUBEFEDCTL_URL} &> ${REDIR}
+        tar xvzf $(pwd)/${KUBEFED_KUBEFEDCTL_FILE}
+        sudocmd install $(pwd)/${KUBEFED_KUBEFEDCTL_FILE%%\.*} /usr/local/bin/
+        sudocmd ln -s /usr/local/bin/${KUBEFED_KUBEFEDCTL_FILE%%\.*} /usr/local/bin/kubefedctl
+        rm $(pwd)/${KUBEFED_KUBEFEDCTL_FILE} &> ${REDIR} || true
         rm $(pwd)/kubefedctl &> ${REDIR} || true
     fi
 }
