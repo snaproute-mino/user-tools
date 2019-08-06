@@ -1841,7 +1841,7 @@ KUBEFED_SYSTEM_NAMESPACE
 EOL
 
 function __set_kubefed_defaults {
-    local DEFAULT_KUBEFED_IMAGE_REPOSITORY=quay.io/kubernetes-multicluster/kubefed
+    local DEFAULT_KUBEFED_IMAGE_REPOSITORY=quay.io/kubernetes-multicluster
     # ${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/kubefed
     local DEFAULT_KUBEFED_VERSION=0.1.0-rc5
     local DEFAULT_KUBEFED_KUBEFEDCTL_VERSION=0.1.0-rc5
@@ -1900,8 +1900,9 @@ function kubefed_deploy {
         kubefed-charts/kubefed \
         --version ${KUBEFED_VERSION} \
         --namespace ${KUBEFED_SYSTEM_NAMESPACE} \
-        --set "controllermanager.repository=${KUBEFED_IMAGE_REPOSITORY}" \
-        --set "controllermanager.replicaCount=2"
+        --set "controllermanager.replicaCount=1" \
+        --set "controllermanager.repository=${KUBEFED_IMAGE_REPOSITORY}"
+        
 }
 
 ### KUBEVIRT CONFIGURATION
