@@ -1,3 +1,6 @@
+{{- $serviceType := default $.Values.global.serviceType "LoadBalancer" -}}
+{{- $sshPort := $.Values.sshPort -}}
+{{- $apiPort := $.Values.apiPort -}}
 {{- $dhcp := index .Values "topology-dhcpserver" -}}
 {{- $mgmtname := printf "%s-%s" $.Release.Name $dhcp.dhcpConfig.name | trunc 63 | trimSuffix "-" -}}
 {{- $links := dict -}}
@@ -122,9 +125,6 @@ spec:
           containerDisk:
             image: {{ $vm.image }}
 ---
-{{- $sshPort := $.Values.sshPort -}}
-{{ $apiPort := $.Values.apiPort }}
-{{- if eq $.Values.global.serviceType "NodePort" -}}
 apiVersion: v1
 kind: Service
 metadata:
@@ -134,8 +134,9 @@ metadata:
     release: {{ $.Release.Name }}
     chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
     app: {{ $.Release.Name }}
+    snaproute.com/topology: {{ $.Release.Name }}
 spec:
-  type: NodePort
+  type: {{ $serviceType }}
   ports:
   - name: ssh
     protocol: TCP
@@ -145,32 +146,19 @@ spec:
     protocol: TCP
     port: {{ $apiPort }}
     targetPort: {{ $apiPort }}
+  - name: prism-9110
+    protocol: TCP
+    port: 9110
+    targetPort: 9110
+  - name: prism-9170
+    protocol: TCP
+    port: 9170
+    targetPort: 9170
+  - name: prism-1101
+    protocol: TCP
+    port: 1101
+    targetPort: 1101
   selector:
     snaproute.com/device-name: {{ $vmname }}
 ---
-{{ else }}
-apiVersion: v1
-kind: Service
-metadata:
-  name: {{ $vmname }}
-  labels:
-    heritage: {{ $.Release.Service }}
-    release: {{ $.Release.Name }}
-    chart: {{ $.Chart.Name }}-{{ $.Chart.Version }}
-    app: {{ $.Release.Name }}
-spec:
-  type: LoadBalancer
-  ports:
-  - name: ssh
-    protocol: TCP
-    port: {{ $sshPort }}
-    targetPort: {{ $sshPort }}
-  - name: kube-api
-    protocol: TCP
-    port: {{ $apiPort }}
-    targetPort: {{ $apiPort }}
-  selector:
-    snaproute.com/device-name: {{ $vmname }}
----
-{{ end }}
 {{ end }}

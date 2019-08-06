@@ -40,6 +40,7 @@ Create chart name and version as used by the chart label.
 {{- $_ := set $vminfo "vmname" $vmname }}
 {{- $_ := set $vminfo "namespace" $.Release.Namespace }}
 {{- $_ := set $vminfo "releasename" $.Release.Name -}}
+{{- $_ := set $vminfo "topologyname" $.Release.Name -}}
 {{- $_ := set $vms $vmname $vminfo -}}
 {{- end -}}
 {{- $info := dict -}}
@@ -235,123 +236,250 @@ function serviceinfo-update() {
 }
 
 function kubeconfig-update() {
-    CACHE=~/.snapl
-    IGNORE_SSH="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
+    local switch_name=${1:-}
+    local switch_ip=${2:-}
+    local switch_ssh_port=${3:-}
+    local switch_api_port=${4:-}
 
-    if [[ -z "${UPDATE_KUBECONFIG}" ]]; then
-        UPDATE_KUBECONFIG=true
-    fi
-
-    USER="root"
-    if [[ -n $TARGET_USER ]]; then
-        USER=$TARGET_USER
-    fi
-    PASSWORD=""
-    if [[ -n $TARGET_PASSWORD ]]; then
-        PASSWORD=$TARGET_PASSWORD
-    fi
-    KUBEPATH="/mnt/state/kubernetes/admin.conf"
-    if [[ -n $TARGET_KUBEPATH ]]; then
-        KUBEPATH=$TARGET_KUBEPATH
-    fi
-
-    # function arguments
-    SWITCH_NAME=$1
-    if [[ "${SWITCH_NAME}" == "" ]]; then
-        >&2 echo "SWITCH_NAME must be provided as first argument"
+    if [[ "${switch_name}" == "" ]]; then
+        >&2 echo "switch_name must be provided as first argument"
         return 1
     fi
-    shift
-
-    SWITCH_IP=$1
-    if [[ "${SWITCH_IP}" == "" ]]; then
-        >&2 echo "SWITCH_IP must be provided as second argument"
+    if [[ "${switch_ip}" == "" ]]; then
+        >&2 echo "switch_ip must be provided as second argument"
         return 1
     fi
-    shift
-
-    SWITCH_SSH_PORT=$1
-    if [[ "${SWITCH_SSH_PORT}" == "" ]]; then
-        SWITCH_SSH_PORT=22
+    if [[ "${switch_ssh_port}" == "" ]]; then
+        switch_ssh_port=22
     fi
-    shift
 
-    SWITCH_API_PORT=$1
-    shift
+    local cache=~/.snapl
+    local ignore_ssh="-o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"
 
-    TARGET_PATH=${CACHE}/${SWITCH_IP}-${SWITCH_SSH_PORT}
-    TARGET=${TARGET_PATH}/admin.conf
-    if [[ "${CLEANUP}" == "true" ]]; then
-        rm -rf ${TARGET_PATH} &> /dev/null
+    if [[ "${UPDATE_KUBECONFIG:-}" == "" ]]; then
+        local UPDATE_KUBECONFIG=true
+    fi
+    local user="root"
+    if [[ "${TARGET_USER:-}" != "" ]]; then
+        user=$TARGET_USER
+    fi
+    local password=""
+    if [[ "${TARGET_PASSWORD:-}" != "" ]]; then
+        password=$TARGET_PASSWORD
+    fi
+    local kubepath="/mnt/state/kubernetes/admin.conf"
+    if [[ "${TARGET_KUBEPATH:-}" != "" ]]; then
+        kubepath=$TARGET_KUBEPATH
+    fi
+
+    local target_path=${cache}/${switch_ip}-${switch_ssh_port}
+    local target=${target_path}/admin.conf
+    if [[ "${CLEANUP:-}" == "true" ]]; then
+        rm -rf ${target_path} &> /dev/null
     else
-        nc -z ${SWITCH_IP} ${SWITCH_SSH_PORT} &> /dev/null
+        nc -z ${switch_ip} ${switch_ssh_port} &> /dev/null
         if [[ "$?" != "0" ]]; then
-            >&2 echo "${SWITCH_IP} is not reachable on ssh port (${SWITCH_SSH_PORT}).  Check that the device is running."
+            >&2 echo "${switch_ip} is not reachable on ssh port (${switch_ssh_port}).  Check that the device is running."
             return 1
         fi
-        mkdir -p ${CACHE}/${SWITCH_IP}-${SWITCH_SSH_PORT}
+        mkdir -p ${cache}/${switch_ip}-${switch_ssh_port}
 
-        if [[ ! ${SKIP_COPY} ]]; then
-            export SSHPASS=${PASSWORD}
-            CMD="sshpass -e scp -P ${SWITCH_SSH_PORT} ${IGNORE_SSH} ${USER}@${SWITCH_IP}:${KUBEPATH} ${TARGET}"
-            if [[ $KUBECONFIG_DEBUG ]]; then
-                >&2 echo "${CMD}"
+        if [[ "${SKIP_COPY:-}" == "" || "${SKIP_COPY:-}" == "false" ]]; then
+            export SSHPASS=${password}
+            local cmd="sshpass -e scp -P ${switch_ssh_port} ${ignore_ssh} ${user}@${switch_ip}:${kubepath} ${target}"
+            if [[ "${KUBECONFIG_DEBUG:-}" == "true" ]]; then
+                >&2 echo "${cmd}"
             fi
-            CMD_OUTPUT=$(${CMD})
+            local cmd_output=$(${cmd})
             if [[ "$?" != "0" ]]; then
-                >&2 echo "could not copy kubeconfig from ${SWITCH_IP}:${KUBEPATH} to ${TARGET}.  Check that the device bootstrapping is complete."
+                >&2 echo "could not copy kubeconfig from ${switch_ip}:${kubepath} to ${target}.  Check that the device bootstrapping is complete."
                 >&2 echo "error:"
-                >&2 echo "${CMD_OUTPUT}"
+                >&2 echo "${cmd_output}"
                 return 1
             fi
         fi
 
-        local api_port=$(cat $TARGET | egrep -o "server: .*" | sed 's#.*:##')
-        if [[ "${SWITCH_API_PORT}" == "" ]]; then
-            SWITCH_API_PORT=${api_port}
+        local api_port=$(cat $target | egrep -o "server: .*" | sed 's#.*:##')
+        if [[ "${switch_api_port}" == "" ]]; then
+            switch_api_port=${api_port}
         fi
 
-        sed -i 's/certificate-authority-data:.*/insecure-skip-tls-verify: true/' $TARGET &> /dev/null
-        sed -i "s#server: .*#server: https://${SWITCH_IP}:${SWITCH_API_PORT}#" ${TARGET} &> /dev/null
+        sed -i 's/certificate-authority-data:.*/insecure-skip-tls-verify: true/' $target &> /dev/null
+        sed -i "s#server: .*#server: https://${switch_ip}:${switch_api_port}#" ${target} &> /dev/null
     fi
 
-    >&2 echo "Updated kubeconfig profile at $TARGET"
+    >&2 echo "Updated kubeconfig profile at $target"
 
-    CLUSTER_NAME=${SWITCH_NAME}
-    CONTEXT_NAME=admin@${CLUSTER_NAME}
-    CREDENTIALS_NAME=${CONTEXT_NAME}
-    DEFAULT_KUBECONFIG=~/.kube/config
+    local cluster_name=${switch_name}
+    local context_name=admin@${cluster_name}
+    local credentials_name=${context_name}
+    local default_kubeconfig=~/.kube/config
 
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config delete-cluster ${CLUSTER_NAME} &> /dev/null || true
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config unset users.${CREDENTIALS_NAME} &> /dev/null || true
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config delete-context ${CONTEXT_NAME} &> /dev/null || true
+    KUBECONFIG=${default_kubeconfig} kubectl config delete-cluster ${cluster_name} &> /dev/null || true
+    KUBECONFIG=${default_kubeconfig} kubectl config unset users.${credentials_name} &> /dev/null || true
+    KUBECONFIG=${default_kubeconfig} kubectl config delete-context ${context_name} &> /dev/null || true
 
-    if [[ "${CLEANUP}" == "true" ]]; then
-        >&2 echo "Removed cluster/credentials/context in kubeconfig: ${DEFAULT_KUBECONFIG}"
+    if [[ "${CLEANUP:-}" == "true" ]]; then
+        >&2 echo "Removed cluster/credentials/context in kubeconfig: ${default_kubeconfig}"
         return 1
     fi
 
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-cluster ${CLUSTER_NAME} --server=https://${SWITCH_IP}:${SWITCH_API_PORT} --insecure-skip-tls-verify=true &> /dev/null
+    KUBECONFIG=${default_kubeconfig} kubectl config set-cluster ${cluster_name} --server=https://${switch_ip}:${switch_api_port} --insecure-skip-tls-verify=true &> /dev/null
 
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-credentials ${CREDENTIALS_NAME} &> /dev/null
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set users."${CREDENTIALS_NAME}".client-certificate-data \
-        $(KUBECONFIG=$TARGET kubectl config view -o jsonpath='{.users[?(@.name == "kubernetes-admin")].user.client-certificate-data}' --raw=true) \
+    KUBECONFIG=${default_kubeconfig} kubectl config set-credentials ${credentials_name} &> /dev/null
+    KUBECONFIG=${default_kubeconfig} kubectl config set users."${credentials_name}".client-certificate-data \
+        $(KUBECONFIG=$target kubectl config view -o jsonpath='{.users[?(@.name == "kubernetes-admin")].user.client-certificate-data}' --raw=true) \
         &> /dev/null
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set users."${CREDENTIALS_NAME}".client-key-data \
-        $(KUBECONFIG=$TARGET kubectl config view -o jsonpath='{.users[?(@.name == "kubernetes-admin")].user.client-key-data}' --raw=true) \
-        &> /dev/null
-
-    KUBECONFIG=${DEFAULT_KUBECONFIG} kubectl config set-context ${CONTEXT_NAME} \
-        --cluster ${CLUSTER_NAME} \
-        --user ${CREDENTIALS_NAME} \
+    KUBECONFIG=${default_kubeconfig} kubectl config set users."${credentials_name}".client-key-data \
+        $(KUBECONFIG=$target kubectl config view -o jsonpath='{.users[?(@.name == "kubernetes-admin")].user.client-key-data}' --raw=true) \
         &> /dev/null
 
-    >&2 echo "Updated cluster/credentials/context in kubeconfig: ${DEFAULT_KUBECONFIG}"
-    >&2 echo "context: ${CONTEXT_NAME}"
-    >&2 echo "cluster: ${CLUSTER_NAME}"
-    >&2 echo "credentials: ${CREDENTIALS_NAME}"
+    KUBECONFIG=${default_kubeconfig} kubectl config set-context ${context_name} \
+        --cluster ${cluster_name} \
+        --user ${credentials_name} \
+        &> /dev/null
+
+    >&2 echo "Updated cluster/credentials/context in kubeconfig: ${default_kubeconfig}"
+    >&2 echo "context: ${context_name}"
+    >&2 echo "cluster: ${cluster_name}"
+    >&2 echo "credentials: ${credentials_name}"
     >&2 echo
-    echo "kubectl config use-context ${CONTEXT_NAME}"
-    >&2 echo
+    >&2 echo "kubectl config use-context ${context_name}"
 }
+
+function topology-kubeconfig-update() {
+    NAMESPACE=${1:-}
+    TOPOLOGY=${2:-}
+    VM_NAME=${3:-}
+
+    if [[ "${VM_NAME}" == "" ]]; then
+        VMS=$(kubectl get vms -l "snaproute.com/topology=${TOPOLOGY}" -o="jsonpath={.items[*].metadata.name}")
+    else
+        VMS=$VM_NAME
+    fi
+
+    >&2 echo "topology-kubeconfig-update: retrieving kubeconfigs for namespace: ${NAMESPACE}, vms: ${VMS}"
+    for vm in $VMS; do
+        serviceinfo-update "${NAMESPACE}" "${vm}"
+        kubeconfig-update "${vm}" "${SERVICE_IP}" "${SSH_PORT}" "${API_PORT}"
+        RET=$?
+        if [[ ${RET} -ne 0 ]]; then
+            return ${RET}
+        fi
+    done
+
+    return 0
+}
+
+function topology-kubefed-join() {
+    HOST_CLUSTER_CONTEXT=${1:-}
+    NAMESPACE=${2:-}
+    TOPOLOGY=${3:-}
+    VM_NAME=${4:-}
+
+    if [[ "${VM_NAME}" == "" ]]; then
+        VMS=$(kubectl get vms -l "snaproute.com/topology=${TOPOLOGY}" -o="jsonpath={.items[*].metadata.name}")
+    else
+        VMS=$VM_NAME
+    fi
+    HOST_CLUSTER_VM="${TOPOLOGY}-ubuntu"
+    >&2 echo "topology-kubefed-join: joining cnnos nodes for namespace: ${NAMESPACE}, vms: ${VMS}"
+    for vm in $VMS; do
+        if [[ "$vm" == "${HOST_CLUSTER_VM}" ]]; then
+            continue
+        fi
+
+        kubefedctl join \
+        ${vm} \
+        --cluster-context=admin@${vm} \
+        --host-cluster-context=${HOST_CLUSTER_CONTEXT} \
+        --host-cluster-name=cnnos-cluster
+
+        RET=$?
+        if [[ ${RET} -ne 0 ]]; then
+            return ${RET}
+        fi
+    done
+
+    return 0
+}
+
+
+function topology-health() {
+    NAMESPACE=${1:-}
+    TOPOLOGY=${2:-}
+    VM_NAME=${3:-}
+
+    if [[ "${VM_NAME}" == "" ]]; then
+        VMS=$(kubectl get vms -l "snaproute.com/topology=${TOPOLOGY}" -o="jsonpath={.items[*].metadata.name}")
+    else
+        VMS=$VM_NAME
+    fi
+
+    >&2 echo "topology-health: checking namespace: ${NAMESPACE}, vms: ${VMS}"
+    for vm in $VMS; do
+        node-health "${NAMESPACE}" "${vm}"
+        RET=$?
+        if [[ ${RET} -ne 0 ]]; then
+            return ${RET}
+        fi
+    done
+
+    return 0
+}
+
+function node-health() {
+    NAMESPACE=${1:-}
+    VM_NAME=${2:-}
+
+    serviceinfo-update "${NAMESPACE}" "${VM_NAME}"
+    >&2 echo "node-health: checking ${NAMESPACE}/${VM_NAME} at https://${SERVICE_IP}:${API_PORT}/healthz"
+    RESP=$(curl -kf https://${SERVICE_IP}:${API_PORT}/healthz)
+    RET=$?
+    if [[ ${RET} -ne 0 || "$RESP" != "ok" ]]; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+function topology-wait-health() {
+    NAMESPACE=${1:-}
+    TOPOLOGY=${2:-}
+    VM_NAME=${3:-}
+
+    if [[ "${WAIT_TIME:-}" == "" ]]; then
+        WAIT_TIME="300"
+    fi
+    if [[ "${INTERVAL:-}" == "" ]]; then
+        INTERVAL="10"
+    fi
+
+    iterations=$(( WAIT_TIME / INTERVAL ))
+    i="0"
+    cluster_healthy=false
+    while [[ $i -lt ${iterations} ]]; do
+        i=$[$i+1]
+        echo "waiting for cnnos nodes to come online"
+        set +e
+        topology-health "${NAMESPACE}" "${TOPOLOGY}"
+        RET=$?
+        set -e
+        if [[ ${RET} -eq 0 ]]; then
+            cluster_healthy=true
+            break
+        fi
+        sleep ${INTERVAL}
+    done
+
+    if [[ "${cluster_healthy}" == "true" ]]; then
+        echo "cluster is healthy"
+    else
+        echo "cnnos nodes are not healthy (apiserver not reachable on all nodes)"
+        return 1
+    fi
+    
+    return 0
+}
+
 {{ end -}}

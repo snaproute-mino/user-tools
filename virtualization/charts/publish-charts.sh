@@ -139,12 +139,13 @@ function snaproute_bootstrap {
     helm repo add ${SNAPROUTE_HELM_REPO_NAME} ${SNAPROUTE_HELM_REPO_URL}
     helm repo update &> ${REDIR}
 
-    SNAPROUTE_publish_charts
+    snaproute_publish_charts
 }
 
-function SNAPROUTE_publish_charts {
+function snaproute_publish_charts {
     for chart_path in $(find ${SNAPROUTE_CHART_ROOT} -name Chart.yaml ); do
         chart_path=$(dirname $chart_path)
+        helm dep update ${chart_path}
         echo "Packaging ${chart_path}"
         OUTPUT=$(helm package --version ${SNAPROUTE_CHART_VERSION} --app-version ${SNAPROUTE_CHART_VERSION} --dependency-update ${chart_path} )
         if [ $? -eq 0 ]; then

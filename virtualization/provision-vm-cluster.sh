@@ -1841,10 +1841,12 @@ KUBEFED_SYSTEM_NAMESPACE
 EOL
 
 function __set_kubefed_defaults {
-    local DEFAULT_KUBEFED_IMAGE_REPOSITORY=${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/kubefed
-    local DEFAULT_KUBEFED_VERSION=0.1.0-rc3
-    local DEFAULT_KUBEFED_KUBEFEDCTL_VERSION=snaproute
-    local DEFAULT_KUBEFED_KUBEFEDCTL_BASE_URL=https://github.com/snaproute-mino/kubefed/releases/download
+    local DEFAULT_KUBEFED_IMAGE_REPOSITORY=quay.io/kubernetes-multicluster/kubefed
+    # ${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/kubefed
+    local DEFAULT_KUBEFED_VERSION=0.1.0-rc5
+    local DEFAULT_KUBEFED_KUBEFEDCTL_VERSION=0.1.0-rc5
+    local DEFAULT_KUBEFED_KUBEFEDCTL_BASE_URL=https://github.com/kubernetes-sigs/kubefed/releases/download
+    # https://github.com/snaproute-mino/kubefed/releases/download
     local DEFAULT_KUBEFED_SYSTEM_NAMESPACE=kube-federation-system
 
     if [[ "${KUBEFED_IMAGE_REPOSITORY:-}" == "" ]]; then

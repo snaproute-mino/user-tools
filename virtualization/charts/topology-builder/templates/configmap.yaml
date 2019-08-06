@@ -5,6 +5,7 @@
 {{- $_ := set $vminfo "vmname" $vmname }}
 {{- $_ := set $vminfo "namespace" $.Release.Namespace }}
 {{- $_ := set $vminfo "releasename" $.Release.Name -}}
+{{- $_ := set $vminfo "topologyname" $.Release.Name -}}
 {{- $_ := set $vminfo "configmapname" (printf "%s-%s" $.Release.Name "topology" | trunc 63 | trimSuffix "-" ) -}}
 {{- $_ := set $vms $vmname $vminfo -}}
 {{- end -}}
