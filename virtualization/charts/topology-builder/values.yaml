@@ -15,6 +15,14 @@ global:
   # serviceType can be either LoadBalancer or NodePort
   serviceType: LoadBalancer 
 
+service:
+  type: LoadBalancer
+
+  # this range will be exposed for passing through nodePorts to the kubernetes instance in vm
+  # names for the ports will be the port number
+  # nodePortRangeStart: 30000
+  # nodePortRangeEnd: 30100
+
 dhcpOptions:
   privateOptions: []
 

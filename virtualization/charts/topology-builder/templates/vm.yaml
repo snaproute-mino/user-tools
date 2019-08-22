@@ -158,6 +158,15 @@ spec:
     protocol: TCP
     port: 1101
     targetPort: 1101
+{{- if and .Values.service.nodePortRangeStart .Values.service.nodePortRangeEnd }}
+{{- range $i, $_ := until (int ( sub (.Values.service.nodePortRangeEnd ) (int64 .Values.service.nodePortRangeStart ) ) ) }}
+{{- $port := add $.Values.service.nodePortRangeStart $i }}
+  - name: "{{ $port }}"
+    protocol: TCP
+    port: {{ $port }}
+    targetPort: {{ $port }}
+{{- end }}
+{{- end }}
   selector:
     snaproute.com/device-name: {{ $vmname }}
 ---
