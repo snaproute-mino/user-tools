@@ -1,0 +1,13 @@
+apiVersion: kibana.k8s.elastic.co/v1alpha1
+kind: Kibana
+metadata:
+  name: {{ default ( include "eck-instance.fullname" . ) .Values.kibana.nameOverride }}
+spec:
+  version: {{ .Values.kibana.version }}
+  nodeCount: {{ .Values.kibana.nodeCount }}
+  elasticsearchRef:
+    name: {{ default ( include "eck-instance.fullname" . ) .Values.kibana.elasticsearchRefOverride }}
+{{- if .Values.kibana.http }}
+  http:
+{{ toYaml .Values.kibana.http | indent 4 }}
+{{- end }}

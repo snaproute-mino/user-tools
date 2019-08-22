@@ -1,0 +1,36 @@
+
+# control which elements of the chart should be deployed
+create:
+  clusterRole: true
+  clusterRoleBinding: true
+  crds: true
+  namespace: false
+  secret: true
+  serviceAccount: true
+  statefulSet: true
+
+# overrides allow the names of objects used in templates to be replaced
+# by objects already existing in your kubernetes
+#
+# clusterRoleNameOverride: ""
+# clusterRoleBindingNameOverride: ""
+# secretNameOverride: ""
+# serviceAccountNameOverride: ""
+# statefulSetNameOverride: ""
+
+
+imageInfo:
+  registry: docker.elastic.co
+  repository: eck/eck-operator
+  tag: 0.9.0
+
+# image value will be preferred over imageInfo
+# image: "docker.elastic.co/eck/eck-operator:0.9.0"
+
+resources:
+  limits:
+    cpu: 1
+    memory: 100Mi
+  requests:
+    cpu: 100m
+    memory: 20Mi

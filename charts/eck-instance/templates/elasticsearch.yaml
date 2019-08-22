@@ -1,0 +1,12 @@
+apiVersion: elasticsearch.k8s.elastic.co/v1alpha1
+kind: Elasticsearch
+metadata:
+  name: {{ default ( include "eck-instance.fullname" . ) .Values.elasticsearch.nameOverride }}
+spec:
+  version: {{ .Values.elasticsearch.version }}
+  nodes:
+{{ toYaml .Values.elasticsearch.nodes | indent 2 }}
+{{- if .Values.elasticsearch.http }}
+  http:
+{{ toYaml .Values.elasticsearch.http | indent 4 }}
+{{- end }}

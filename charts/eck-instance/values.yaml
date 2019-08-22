@@ -1,0 +1,53 @@
+
+create:
+  elasticsearch: true
+  elasticsearchService: true
+  kibana: true
+  kibanaService: true
+  eks-operator: false
+
+# elasticsearch instance configuration
+elasticsearch:
+  # nameOverride: ""
+  
+  version: 7.2.0
+  
+  nodes:
+  - nodeCount: 1
+    config:
+      node.master: true
+      node.data: true
+      node.ingest: true
+    volumeClaimTemplates:
+    - metadata:
+        name: elasticsearch-data # note: elasticsearch-data must be the name of the Elasticsearch volume
+      spec:
+        accessModes:
+        - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: local-path # can be any available storage class
+
+  # featureFlags: {}
+
+  http:
+    service:
+      spec:
+        type: ClusterIP
+  
+  # image: ""
+
+kibana:
+  # nameOverride: ""
+  
+  version: 7.2.0
+  nodeCount: 1
+  
+  # statically set the elasticsearchRef to an existing elasticsearch instance
+  # elasticsearchRefOverride: ""
+
+  http:
+    service:
+      spec:
+        type: ClusterIP

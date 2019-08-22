@@ -1,0 +1,15 @@
+{{- if .Values.create.clusterRoleBinding -}}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: {{ default ( include "eck-operator.fullname" . ) .Values.clusterRoleBindingNameOverride }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: {{ default ( include "eck-operator.fullname" . ) .Values.clusterRoleNameOverride }}
+subjects:
+- kind: ServiceAccount
+  name: {{ default ( include "eck-operator.fullname" . ) .Values.serviceAccountNameOverride }}
+  namespace: {{ .Release.Namespace }}
+---
+{{- end -}}

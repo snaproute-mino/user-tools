@@ -1,0 +1,53 @@
+{{- if .Values.create.statefulSet -}}
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ default ( include "eck-operator.fullname" . ) .Values.statefulSetNameOverride }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    control-plane: {{ template "eck-operator.fullname" . }}
+spec:
+  selector:
+    matchLabels:
+      control-plane: {{ template "eck-operator.fullname" . }}
+  serviceName: {{ template "eck-operator.fullname" . }}
+  template:
+    metadata:
+      labels:
+        control-plane: {{ template "eck-operator.fullname" . }}
+    spec:
+      serviceAccountName: {{ default ( include "eck-operator.fullname" . ) .Values.serviceAccountNameOverride  }}
+      containers:
+      - image: {{ template "eck-operator.image" . }}
+        name: manager
+        args: ["manager", "--operator-roles", "all", "--enable-debug-logs=false"]
+        env:
+          - name: OPERATOR_NAMESPACE
+            valueFrom:
+              fieldRef:
+                fieldPath: metadata.namespace
+          - name: WEBHOOK_SECRET
+            value: {{ default ( include "eck-operator.fullname" . ) .Values.secretNameOverride }}
+          - name: WEBHOOK_PODS_LABEL
+            value: {{ template "eck-operator.fullname" . }}
+          - name: OPERATOR_IMAGE
+            value: {{ template "eck-operator.image" . }}
+{{- if .Values.resources }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- end }}
+        ports:
+        - containerPort: 9876
+          name: webhook-server
+          protocol: TCP
+        volumeMounts:
+        - mountPath: /tmp/cert
+          name: cert
+          readOnly: true
+      terminationGracePeriodSeconds: 10
+      volumes:
+      - name: cert
+        secret:
+          defaultMode: 420
+          secretName: {{ default ( include "eck-operator.fullname" . ) .Values.secretNameOverride }}
+{{- end -}}

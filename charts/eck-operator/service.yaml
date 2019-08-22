@@ -1,0 +1,53 @@
+{{- define "eck-operator.service" -}}
+metadata:
+  name: {{ include "eck-operator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "eck-operator.name" . }}
+    helm.sh/chart: {{ include "eck-operator.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+spec:
+  type: {{ .Values.service.type }}
+  ports:
+  - port: {{ .Values.serverBindPort }}
+    targetPort: {{ .Values.serverBindPort }}
+{{- if eq .Values.service.type "NodePort" }}
+    nodePort: {{ .Values.service.nodePort }}
+{{- end }}
+    protocol: TCP
+    name: eck-operator
+  selector:
+    app.kubernetes.io/name: {{ include "eck-operator.name" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end -}}
+
+{{- if .Values.create.service }}
+{{- if .Values.federation.enabled }}
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedService
+metadata:
+  name: {{ template "eck-operator.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  template:
+{{ include "eck-operator.service" . | indent 4 }}
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.serviceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.service | toYaml | indent 4 }}
+{{- end }}
+{{- else }}
+apiVersion: v1
+kind: Service
+{{ include "eck-operator.service" . }}
+{{- end }}
+{{- end }}
