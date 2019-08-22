@@ -1841,7 +1841,7 @@ KUBEFED_SYSTEM_NAMESPACE
 EOL
 
 function __set_kubefed_defaults {
-    local DEFAULT_KUBEFED_IMAGE_REPOSITORY=repo.snaproute.com/vm-infra/kubefed
+    local DEFAULT_KUBEFED_IMAGE_REPOSITORY=repo.snaproute.com/vm-infra
     # quay.io/kubernetes-multicluster
     # ${BOOTSTRAPPER_DOCKER_REGISTRY}/vm-infra/kubefed
     local DEFAULT_KUBEFED_VERSION=0.1.0-rc6
