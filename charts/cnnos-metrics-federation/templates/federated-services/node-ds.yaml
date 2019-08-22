@@ -1,0 +1,112 @@
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedDaemonSet
+metadata:
+  name: {{ .Values.fabricName }}-node-exporter
+  labels:
+    snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+    app.kubernetes.io/name: node-exporter
+spec:
+  template:
+    metadata:
+      name: {{ .Values.fabricName }}-node-exporter
+      namespace: {{ .Release.Namespace }}
+      labels:
+        snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+        app.kubernetes.io/name: node-exporter
+    spec:
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app.kubernetes.io/instance: {{ .Values.fabricName }}
+          app.kubernetes.io/name: node-exporter
+      template:
+        metadata:
+          labels:
+            snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+            app.kubernetes.io/instance: {{ .Values.fabricName }}
+            app.kubernetes.io/name: node-exporter
+        spec:
+          containers:
+          - args:
+            - --path.procfs=/host/proc
+            - --path.sysfs=/host/sys
+            - --web.listen-address=0.0.0.0:9100
+            - --collector.filesystem.ignored-mount-points=^/(dev|proc|sys|var/lib/docker/.+)($|/)
+            - --collector.filesystem.ignored-fs-types=^(autofs|binfmt_misc|cgroup|configfs|debugfs|devpts|devtmpfs|fusectl|hugetlbfs|mqueue|overlay|proc|procfs|pstore|rpc_pipefs|securityfs|sysfs|tracefs)$
+            image: quay.io/prometheus/node-exporter:v0.18.0
+            imagePullPolicy: IfNotPresent
+            livenessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /
+                port: 9100
+                scheme: HTTP
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 1
+            name: node-exporter
+            ports:
+            - containerPort: 9100
+              hostPort: 9100
+              name: metrics
+              protocol: TCP
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /
+                port: 9100
+                scheme: HTTP
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 1
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+            volumeMounts:
+            - mountPath: /host/proc
+              name: proc
+              readOnly: true
+            - mountPath: /host/sys
+              name: sys
+              readOnly: true
+          dnsPolicy: ClusterFirst
+          hostNetwork: true
+          hostPID: true
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 65534
+          serviceAccount: {{ .Values.fabricName }}-node-exporter
+          serviceAccountName: {{ .Values.fabricName }}-node-exporter
+          terminationGracePeriodSeconds: 30
+          tolerations:
+          - effect: NoSchedule
+            operator: Exists
+          volumes:
+          - hostPath:
+              path: /proc
+              type: ""
+            name: proc
+          - hostPath:
+              path: /sys
+              type: ""
+            name: sys
+      templateGeneration: 1
+      updateStrategy:
+        rollingUpdate:
+          maxUnavailable: 1
+        type: RollingUpdate
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}

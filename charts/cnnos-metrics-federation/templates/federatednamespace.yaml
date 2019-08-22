@@ -1,0 +1,18 @@
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedNamespace
+metadata:
+  name: default
+spec:
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}

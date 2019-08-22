@@ -1,0 +1,53 @@
+{{- range $nodeName, $ip  := .Values.nodes }}
+apiVersion: monitoring.coreos.com/v1
+kind: Prometheus
+metadata:
+  name: "{{ $.Values.fabricName }}-{{ $nodeName }}"
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: prometheus-operator-prometheus
+    release: {{ $.Values.prometheusRelease }}
+spec:
+  alerting:
+    alertmanagers:
+    - name: {{ $.Values.fabricName }}-prometheus-operat-alertmanager
+      namespace: {{ $.Release.Namespace }}
+      pathPrefix: /
+      port: web
+  apiserverConfig:
+    host: https://{{ $.Values.fabricName }}-{{ $nodeName }}:{{ $.Values.apiserverPort }}
+    tlsConfig:
+      serverName: localhost
+      insecureSkipVerify: true
+  baseImage: quay.io/prometheus/prometheus
+  enableAdminAPI: false
+  externalUrl: http://{{ $.Values.fabricName }}-{{ $nodeName }}-prometheus:9090
+  listenLocal: false
+  logFormat: logfmt
+  logLevel: info
+  paused: false
+  podMonitorSelector:
+    matchLabels:
+      snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+      snaproute.com/cnnos-node: {{ $nodeName }}
+  replicas: 1
+  retention: 2h
+  routePrefix: /
+  ruleNamespaceSelector: {}
+  ruleSelector:
+    matchLabels:
+      app: prometheus-operator
+      release: {{ $.Values.fabricName }}
+  securityContext:
+    fsGroup: 2000
+    runAsNonRoot: true
+    runAsUser: 1000
+  serviceAccountName: "default" # {{ $.Values.fabricName }}-prometheus-operator-prometheus
+  serviceMonitorNamespaceSelector: {}
+  serviceMonitorSelector:
+    matchLabels:
+      snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+      snaproute.com/cnnos-node: {{ $nodeName }}
+  version: v2.10.0
+---  
+{{ end }}

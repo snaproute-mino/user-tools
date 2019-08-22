@@ -1,0 +1,214 @@
+{{- range $nodeName, $_ := .Values.nodes }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $.Values.fabricName }}-{{ $nodeName }}-kube-apiserver
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+    snaproute.com/cnnos-node: {{ $nodeName }}
+spec:
+  endpoints:
+  - port: https
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __address__
+      targetLabel: __address__
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}:{{ $.Values.apiserverPort }}
+    - action: replace
+      sourceLabels: []
+      targetLabel: job
+      replacement: apiserver
+    - action: replace
+      sourceLabels: []
+      targetLabel: cnf_node
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}
+  namespaceSelector:
+    matchNames:
+    - default
+  selector:
+    matchLabels:
+      component: apiserver
+      provider: kubernetes
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $.Values.fabricName }}-{{ $nodeName }}-kubelet
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+    snaproute.com/cnnos-node: {{ $nodeName }}
+    app.kubernetes.io/name: prometheus-operator-kubelet
+spec:
+  endpoints:
+  - port: https
+    honorLabels: true
+    scheme: https
+    path: /api/v1/nodes/localhost:{{ $.Values.kubeletPort }}/proxy/metrics
+    tlsConfig:
+      insecureSkipVerify: true
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __address__
+      targetLabel: __address__
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}:{{ $.Values.apiserverPort }}
+    - action: replace
+      sourceLabels: []
+      targetLabel: job
+      replacement: kubelet
+    - action: replace
+      sourceLabels: []
+      targetLabel: cnf_node
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}
+    - action: labelmap
+      regex: __meta_kubernetes_node_label_(.+)
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_node_name
+      targetLabel: __metrics_path__
+      regex: (.+)
+      replacement: /api/v1/nodes/${1}:{{ $.Values.kubeletPort }}/proxy/metrics
+  - port: https
+    honorLabels: true
+    scheme: https
+    path: /api/v1/nodes/localhost:{{ $.Values.kubeletPort }}/proxy/metrics/cadvisor
+    tlsConfig:
+      insecureSkipVerify: true
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __address__
+      targetLabel: __address__
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}:{{ $.Values.apiserverPort }}
+    - action: replace
+      sourceLabels: []
+      targetLabel: job
+      replacement: kubelet
+    - action: replace
+      sourceLabels: []
+      targetLabel: cnf_node
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}
+    - action: labelmap
+      regex: __meta_kubernetes_node_label_(.+)
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_node_name
+      targetLabel: __metrics_path__
+      regex: (.+)
+      replacement: /api/v1/nodes/${1}:{{ $.Values.kubeletPort }}/proxy/metrics/cadvisor
+  namespaceSelector:
+    matchNames:
+    - default
+  selector:
+    matchLabels:
+      component: apiserver
+      provider: kubernetes
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $.Values.fabricName }}-{{ $nodeName }}-kube-state-metrics
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+    snaproute.com/cnnos-node: {{ $nodeName }}
+    app.kubernetes.io/name: prometheus-operator-kube-state-metrics
+spec:
+  endpoints:
+  - port: metrics
+    scheme: https
+    tlsConfig:
+      insecureSkipVerify: true
+    # path: /api/v1/namespaces/monitoring/services/http:kube-state-metrics:8080/proxy/metrics
+    honorLabels: true
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __address__
+      targetLabel: __address__
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}:{{ $.Values.apiserverPort }}
+    - action: replace
+      sourceLabels: []
+      targetLabel: job
+      replacement: kube-state-metrics
+    - action: replace
+      sourceLabels: []
+      targetLabel: cnf_node
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_namespace
+      - __meta_kubernetes_endpoint_port_name
+      - __meta_kubernetes_service_name
+      - __meta_kubernetes_pod_container_port_number
+      - __metrics_path__
+      regex: (.+);(.+);(.+);(.+);(.+)
+      targetLabel: __metrics_path__
+      replacement: /api/v1/namespaces/${1}/services/http:${3}:${4}/proxy/${5}
+    - action: labelmap
+      regex: __meta_kubernetes_service_label_(.+)
+  namespaceSelector:
+    matchNames:
+    - {{ $.Release.Namespace }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: kube-state-metrics
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $.Values.fabricName }}-{{ $nodeName }}-node-exporter
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+    snaproute.com/cnnos-node: {{ $nodeName }}
+    app.kubernetes.io/name: prometheus-node-exporter
+spec:
+  endpoints:
+  - port: metrics
+    scheme: https
+    honorLabels: true
+    # path: /api/v1/services/monitoring/services/http:node-exporter:9100/proxy/metrics
+    tlsConfig:
+      insecureSkipVerify: true
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __address__
+      targetLabel: __address__
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}:{{ $.Values.apiserverPort }}
+    - action: replace
+      sourceLabels: []
+      targetLabel: job
+      replacement: node-exporter
+    - action: replace
+      sourceLabels: []
+      targetLabel: cnf_node
+      replacement: {{ $.Values.fabricName }}-{{ $nodeName }}
+    - action: labelmap
+      regex: __meta_kubernetes_node_label_(.+)
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_namespace
+      - __meta_kubernetes_endpoint_port_name
+      - __meta_kubernetes_service_name
+      - __meta_kubernetes_pod_container_port_number
+      - __metrics_path__
+      regex: (.+);(.+);(.+);(.+);(.+)
+      targetLabel: __metrics_path__
+      replacement: /api/v1/namespaces/${1}/services/http:${3}:${4}/proxy/${5}
+  namespaceSelector:
+    matchNames:
+    - {{ $.Release.Namespace }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: node-exporter
+---
+{{- end }}
+      

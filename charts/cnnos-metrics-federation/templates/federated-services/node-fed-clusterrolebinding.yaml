@@ -1,0 +1,29 @@
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedClusterRoleBinding
+metadata:
+  name: {{ .Values.fabricName }}-node-exporter
+spec:
+  template:
+    metadata:
+      name: {{ .Values.fabricName }}-node-exporter
+    roleRef:
+      apiGroup: rbac.authorization.k8s.io
+      kind: ClusterRole
+      name: {{ .Values.fabricName }}-node-exporter
+    subjects:
+    - kind: ServiceAccount
+      name: {{ .Values.fabricName }}-node-exporter
+      namespace: {{ .Release.Namespace }}
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}

@@ -1,0 +1,39 @@
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ $.Values.fabricName }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    release: {{ $.Values.prometheusRelease }}
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+spec:
+  endpoints:
+  - honorLabels: true
+    interval: 1m
+    path: /federate
+    params:
+      'match[]':
+      - '{job!=""}'
+    relabelings:
+    - action: replace
+      sourceLabels:
+      - __meta_kubernetes_service_name
+      targetLabel: cnf_node
+      replacement: ${1}
+    - action: replace
+      sourceLabels:
+      - node
+      - __meta_kubernetes_service_label_snaproute_com_cnnos_fabric
+      - __meta_kubernetes_service_label_snaproute_com_cnnos_node
+      targetLabel: node
+      separator: ";"
+      regex: (localhost);(.+);(.*)
+      replacement: ${2}-${3}
+  selector:
+    matchLabels:
+      snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+      app: prometheus
+  namespaceSelector:
+    matchNames:
+    - {{ $.Release.Namespace }}
+---

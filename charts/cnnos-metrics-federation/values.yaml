@@ -1,0 +1,25 @@
+
+apiserverPort: 16443
+kubeletPort: 11250
+
+fabricName: cnf1
+prometheusRelease: cnf-metrics
+
+nodes: {}
+  # leaf1: 192.168.105.118
+
+federation:
+  clusterSelector:
+    matchLabels:
+      snaproute.com/cnf-metrics: "true"
+
+  clusters:
+  # - name: leaf1
+  # - name: leaf2
+
+  overrides:
+    crdEnabled: false
+    crd: {}
+
+    fluentdCollectorEnabled: false
+    fluentdCollector: {}

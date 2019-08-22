@@ -1,0 +1,30 @@
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedClusterRole
+metadata:
+  name: {{ .Values.fabricName }}-node-exporter
+spec:
+  template:
+    metadata:
+      name: {{ .Values.fabricName }}-node-exporter
+    rules:
+    - apiGroups:
+      - extensions
+      resourceNames:
+      - {{ .Values.fabricName }}-node-exporter
+      resources:
+      - podsecuritypolicies
+      verbs:
+      - use
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}

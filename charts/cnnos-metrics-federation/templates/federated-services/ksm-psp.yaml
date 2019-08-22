@@ -1,0 +1,47 @@
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedPodSecurityPolicy
+metadata:
+  name: {{ .Values.fabricName }}-kube-state-metrics
+  labels:
+    snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+    app.kubernetes.io/name: kube-state-metrics
+spec:
+  template:
+    metadata:
+      name: {{ .Values.fabricName }}-kube-state-metrics
+      namespace: {{ .Release.Namespace }}
+      labels:
+        snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+        app.kubernetes.io/name: kube-state-metrics
+        jobLabel: kube-state-metrics
+    spec:
+      allowPrivilegeEscalation: true
+      fsGroup:
+        ranges:
+        - max: 65535
+          min: 1
+        rule: MustRunAs
+      runAsUser:
+        rule: MustRunAsNonRoot
+      seLinux:
+        rule: RunAsAny
+      supplementalGroups:
+        ranges:
+        - max: 65535
+          min: 1
+        rule: MustRunAs
+      volumes:
+      - secret
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}

@@ -1,0 +1,101 @@
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedDeployment
+metadata:
+  name: {{ .Values.fabricName }}-kube-state-metrics
+  labels:
+    snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+    app.kubernetes.io/name: kube-state-metrics
+spec:
+  template:
+    metadata:
+      name: {{ .Values.fabricName }}-kube-state-metrics
+      namespace: {{ .Release.Namespace }}
+      labels:
+        snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+        app.kubernetes.io/name: kube-state-metrics
+    spec:
+      progressDeadlineSeconds: 600
+      replicas: 1
+      revisionHistoryLimit: 10
+      selector:
+        matchLabels:
+          app.kubernetes.io/instance: {{ .Values.fabricName }}
+          app.kubernetes.io/name: kube-state-metrics
+      strategy:
+        rollingUpdate:
+          maxSurge: 25%
+          maxUnavailable: 25%
+        type: RollingUpdate
+      template:
+        metadata:
+          labels:
+            snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+            app.kubernetes.io/instance: {{ .Values.fabricName }}
+            app.kubernetes.io/name: kube-state-metrics
+        spec:
+          containers:
+          - args:
+            - --collectors=certificatesigningrequests
+            - --collectors=configmaps
+            - --collectors=cronjobs
+            - --collectors=daemonsets
+            - --collectors=deployments
+            - --collectors=endpoints
+            - --collectors=horizontalpodautoscalers
+            - --collectors=ingresses
+            - --collectors=jobs
+            - --collectors=limitranges
+            - --collectors=namespaces
+            - --collectors=nodes
+            - --collectors=persistentvolumeclaims
+            - --collectors=persistentvolumes
+            - --collectors=poddisruptionbudgets
+            - --collectors=pods
+            - --collectors=replicasets
+            - --collectors=replicationcontrollers
+            - --collectors=resourcequotas
+            - --collectors=secrets
+            - --collectors=services
+            - --collectors=statefulsets
+            image: quay.io/coreos/kube-state-metrics:v1.6.0
+            imagePullPolicy: IfNotPresent
+            name: kube-state-metrics
+            ports:
+            - name: metrics
+              containerPort: 8080
+              protocol: TCP
+            readinessProbe:
+              failureThreshold: 3
+              httpGet:
+                path: /healthz
+                port: 8080
+                scheme: HTTP
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              successThreshold: 1
+              timeoutSeconds: 5
+            resources: {}
+            terminationMessagePath: /dev/termination-log
+            terminationMessagePolicy: File
+          dnsPolicy: ClusterFirst
+          restartPolicy: Always
+          schedulerName: default-scheduler
+          securityContext:
+            fsGroup: 65534
+            runAsUser: 65534
+          serviceAccount: {{ .Values.fabricName }}-kube-state-metrics
+          serviceAccountName: {{ .Values.fabricName }}-kube-state-metrics
+          terminationGracePeriodSeconds: 30
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}

@@ -1,0 +1,29 @@
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedServiceAccount
+metadata:
+  name: {{ .Values.fabricName }}-node-exporter
+  labels:
+    snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+    app.kubernetes.io/name: node-exporter
+spec:
+  template:
+    metadata:
+      name: {{ .Values.fabricName }}-node-exporter
+      namespace: {{ .Release.Namespace }}
+      labels:
+        snaproute.com/cnnos-fabric: {{ .Values.fabricName }}
+        app.kubernetes.io/name: node-exporter
+        jobLabel: node-exporter
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}

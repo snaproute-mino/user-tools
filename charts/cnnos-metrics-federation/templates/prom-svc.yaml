@@ -1,0 +1,63 @@
+{{- range $nodeName, $ip  := .Values.nodes }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Values.fabricName }}-{{ $nodeName }}-prometheus
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+    snaproute.com/cnnos-node: {{ $nodeName }}
+    app: prometheus
+spec:
+  ports:
+  - name: web
+    port: 9090
+    protocol: TCP
+    targetPort: 9090
+  selector:
+    app: prometheus
+    prometheus: {{ $.Values.fabricName }}-{{ $nodeName }}
+  type: ClusterIP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: {{ $.Values.fabricName }}-{{ $nodeName }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+    snaproute.com/cnnos-node: {{ $nodeName }}
+subsets:
+- addresses:
+  - ip: {{ $ip }}
+  ports:
+  - name: https
+    port: {{ $.Values.apiserverPort }}
+    protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Values.fabricName }}-{{ $nodeName }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    snaproute.com/cnnos-fabric: {{ $.Values.fabricName }}
+    snaproute.com/cnnos-node: {{ $nodeName }}
+    snaproute.com/kubelet: k8s
+spec:
+    clusterIP: None
+    ports:
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: {{ $.Values.apiserverPort }}
+    - name: http
+      port: 80
+      protocol: TCP
+      targetPort: {{ $.Values.apiserverPort }}
+    - name: https-metrics
+      port: {{ $.Values.kubeletPort }}
+      protocol: TCP
+      targetPort: {{ $.Values.apiserverPort }}
+---
+{{- end }}
