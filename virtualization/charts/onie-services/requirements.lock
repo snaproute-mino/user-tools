@@ -1,0 +1,6 @@
+dependencies:
+- name: dhcp-server
+  repository: https://repo.snaproute.com/chartrepo/virtualization
+  version: v1.0.0
+digest: sha256:c9000d94bd6f5bd5352866bda9334dfe53f836a48d4640615eedfbfa8f43e9bd
+generated: 2019-07-09T15:41:02.01753347-07:00

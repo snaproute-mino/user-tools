@@ -1,0 +1,6 @@
+#requirements.yaml
+dependencies:
+## mandatory (no tags, but can be overridden with condition
+- name: dhcp-server
+  version: ">=0.1"
+  repository: "https://repo.snaproute.com/chartrepo/virtualization"
