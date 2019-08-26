@@ -1,0 +1,77 @@
+{{- if .Values.aggregator.enabled -}}
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: {{ template "aggregator.fullname" . }}
+  labels:
+    app: {{ template "fluentd.fullname" . }}
+    chart: "{{.Chart.Name}}-{{.Chart.Version}}"
+    component: {{ template "aggregator.fullname" . }}
+    heritage: "{{ .Release.Service }}"
+    release: "{{ .Release.Name }}"
+spec:
+  replicas: {{ .Values.aggregator.replicas }}
+  minReadySeconds: 5
+  progressDeadlineSeconds: 15
+  revisionHistoryLimit: 5
+  strategy:
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: "100%"
+  template:
+    metadata:
+      labels:
+        app: {{ template "fluentd.fullname" . }}
+        component: {{ template "aggregator.fullname" . }}
+        release: "{{ .Release.Name }}"
+      annotations:
+        {{ template "fluentd.fullname" . }}-config/sha256sum: {{ include (print $.Template.BasePath "/fluentd-configmap.yaml") . | sha256sum }}
+        {{ template "fluentd.fullname" . }}-secrets/sha256sum: {{ include (print $.Template.BasePath "/fluentd-secrets.yaml") . | sha256sum }}
+    spec:
+      containers:
+      - name: fluentd
+        image: "{{ .Values.aggregator.image.repository }}:{{ .Values.aggregator.image.tag }}"
+        imagePullPolicy: {{ .Values.aggregator.image.pullPolicy }}
+        command: ["fluentd", "-c", "/fluentd/etc/fluentd.conf", "-p", "/fluentd/plugins"]
+        env:
+        - name: FLUENTD_CONFIG
+          value: fluentd-aggregator.conf
+        resources:
+{{ toYaml .Values.aggregator.resources | indent 10 }}
+        ports:
+        - name: fwd-input
+          containerPort: 24224
+          protocol: TCP
+        - name: fwd-input-udp
+          containerPort: 24224
+          protocol: UDP
+        - name: prom-metrics
+          containerPort: 24231
+          protocol: TCP
+        - name: monitor-agent
+          containerPort: 24220
+          protocol: TCP
+        - name: http-input
+          containerPort: 9880
+          protocol: TCP
+        livenessProbe:
+          tcpSocket:
+            port: 24224
+          initialDelaySeconds: 5
+          timeoutSeconds: 1
+        volumeMounts:
+        - name: fluentd-config
+          mountPath: /fluentd/etc
+        - name: fluentd-secrets
+          mountPath: /fluentd/secrets
+      volumes:
+      - name: fluentd-config
+        configMap:
+          name: {{ template "fluentd.fullname" . }}-config
+      - name: fluentd-secrets
+        secret:
+          secretName: {{ template "fluentd.fullname" . }}-secrets
+      # Give the aggregator ample time to flush it's logs
+      terminationGracePeriodSeconds: 160
+      serviceAccountName: {{ .Values.serviceAccountName }}
+{{- end }}

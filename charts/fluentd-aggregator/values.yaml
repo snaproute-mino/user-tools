@@ -1,0 +1,57 @@
+output:
+  type: elasticsearch
+  elasticsearch:
+    host: cnf-log-eck-instance-es-http.default.svc.cluster.local
+    port: 9200
+    scheme: https
+    sslVerify: false
+    sslVersion: TLSv1_2
+    reloadConnections: true
+    user: cnnos
+    password: logging
+  cloudwatch:
+    accessKey: ""
+    secretKey: ""
+    region: ""
+    logGroupName: "fluentd-kubernetes"
+  logentries:
+    token: ""
+  loggly:
+    token: ""
+
+collector:
+  image:
+    repository: quay.io/coreos/fluentd-kubernetes
+    tag: v0.12-debian-elasticsearch
+  resources:
+    limits:
+      cpu: 100m
+      memory: 500Mi
+    requests:
+      cpu: 100m
+      memory: 250Mi
+
+aggregator:
+  enabled: true
+
+  service:
+    type: NodePort
+
+    nodePortInput: 30002
+    nodePortInputUDP: 30003
+    # nodePortPrometheusMetrics:
+    nodePortMonitorAgent: 30004
+
+  replicas: 1
+  image:
+    repository: quay.io/coreos/fluentd-kubernetes
+    tag: v0.12-debian-elasticsearch
+  resources:
+    limits:
+      cpu: 2
+      memory: 1024Mi
+    requests:
+      cpu: 1
+      memory: 250Mi
+
+serviceAccountName: fluentd
