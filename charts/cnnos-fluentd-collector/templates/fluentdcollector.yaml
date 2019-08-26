@@ -1,0 +1,50 @@
+{{- define "cnnos-fluentd-collector.fluentdCollector" -}}
+metadata:
+  name: {{ include "cnnos-fluentd-collector.fullname" . }}-{{ .Values.scratch.inType }}
+  labels:
+    host: "{{ .Values.host }}"
+spec:
+  host: "{{ required "host must be specified as either a valid dns name or IP address of the log server." .Values.host }}"
+  port: {{ required "port must be specified for the log server." .Values.port }}
+  protocol: "{{ .Values.protocol }}"
+  inType: "{{ .Values.scratch.inType }}"
+  outType: "{{ .Values.outputType }}"
+  user: "{{ .Values.username }}"
+  password: "{{ .Values.password }}"
+  tableName: "{{ .Values.tableName }}"
+{{- end -}}
+{{- if .Values.create.fluentdCollector }}
+{{- range $inType, $val := .Values.collectors }}
+{{- $_ := set $.Values "scratch" ( dict "inType" $inType ) }}
+{{- if $val -}}
+{{- if $.Values.federation.enabled }}
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedFluentdCollector
+metadata:
+  name: {{ include "cnnos-fluentd-collector.fullname" $ }}-{{ $inType }}
+  namespace: {{ $.Release.Namespace }}
+spec:
+  template:
+{{ include "cnnos-fluentd-collector.fluentdCollector" $ | indent 4 }}
+  placement:
+{{- if $.Values.federation.clusterSelector }}
+    clusterSelector:
+{{ $.Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if $.Values.federation.clusters }}
+    clusters:
+{{ $.Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if $.Values.federation.overrides.fluentdCollector }}
+  overrides:
+{{ $.Values.federation.overrides.usersAuditHook | toYaml | indent 4 }}
+{{- end }}
+{{- else }}
+apiVersion: config.snaproute.com/v1
+kind: FluentdCollector
+{{ include "cnnos-fluentd-collector.fluentdCollector" $ }}
+{{- end }}
+---
+{{- end -}}
+{{- end }}
+{{- end }}

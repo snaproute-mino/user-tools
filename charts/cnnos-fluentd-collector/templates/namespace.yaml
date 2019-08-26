@@ -1,0 +1,36 @@
+{{- define "cnnos-fluentd-collector.namespace" }}
+metadata:
+  name: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: {{ include "cnnos-fluentd-collector.name" . }}
+    helm.sh/chart: {{ include "cnnos-fluentd-collector.chart" . }}
+    app.kubernetes.io/instance: {{ .Release.Name }}
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end -}}
+
+{{- if and .Values.federation.enabled .Values.federation.createNamespace }}
+apiVersion: types.kubefed.io/v1beta1
+kind: FederatedNamespace
+metadata:
+  name: {{ .Release.Namespace }}
+spec:
+  template:
+{{ include "cnnos-fluentd-collector.namespace" . | indent 4 }}
+  placement:
+{{- if .Values.federation.clusterSelector }}
+    clusterSelector:
+{{ .Values.federation.clusterSelector | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.clusters }}
+    clusters:
+{{ .Values.federation.clusters | toYaml | indent 6 }}
+{{- end }}
+{{- if .Values.federation.overrides.namespaceEnabled }}
+  overrides:
+{{ .Values.federation.overrides.namespace | toYaml | indent 4 }}
+{{- end }}
+{{- else if .Values.create.namespace }}
+apiVersion: apps/v1
+kind: Namespace
+{{ include "cnnos-fluentd-collector.namespace" . }}
+{{- end }}

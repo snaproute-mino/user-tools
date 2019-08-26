@@ -1,0 +1,175 @@
+{{- if and .Values.create.crd }}
+apiVersion: apiextensions.k8s.io/v1beta1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    "helm.sh/hook": crd-install
+    snapos-cli-templates: '{"Name":"","List":null,"Get":null,"Attachments":null}'
+    snapos-controller-rbac-verbs: '["get","list","watch","update","patch"]'
+    snapos-crd-fieldOrder: '["","InType", "OutType","Host","Port","Protocol","Severity","Facility","Database","TableName","User","Password"]'
+    snapos-crd-labels: '["Host"]'
+    snapos-cro-createDefaults: "true"
+    snapos-cro-createDiscovered: "false"
+    snapos-cro-quota: ""
+    snapos-user-rbac-verbs: '["get","list","patch","update","watch"]'
+    snaproute.com/openapiv3-schema: '{"properties":{"spec":{"description":"Sets the
+      properties for a fluentdCollector instance - input, output, host, protocol,
+      severity, database parameters, etc.","required":["Host","Port"],"properties":{"Database":{"description":"Target
+      database (for influxdb)","type":"string","format":"string","default":"fluentd"},"Facility":{"description":"Syslog
+      facility","type":"string","format":"string","default":"user"},"Host":{"description":"Log
+      collector host (ip or name)","type":"string","format":"string"},"InType":{"description":"Defines
+      the type of logs we want to collect (fluentd source)","type":"string","format":"string","default":"syslog","enum":["syslog","file","container"]},"OutType":{"description":"Defines
+      the collector (fluentd output plugin)","type":"string","format":"string","default":"syslog","enum":["syslog","influxdb","elasticsearch","forward"]},"Password":{"description":"Login
+      password (for influxdb)","type":"string","format":"string","default":"root"},"Port":{"description":"Port
+      number on which we send logs","type":"integer","format":"int32"},"Protocol":{"description":"Transport
+      Protocol to use with syslog","type":"string","format":"string","default":"udp"},"Severity":{"description":"Syslog
+      severity Information","type":"string","format":"string","default":"notice","enum":["emerg","alert","crit","err","warning","notice","info","debug","all"]},"TableName":{"description":"Target
+      database table (for influxdb)","type":"string","format":"string","default":"fluentd"},"User":{"description":"Login
+      user (for influxdb)","type":"string","format":"string","default":"root"}}}}}'
+    snaproute.com/webhook-mutation-url: https://127.0.0.1:8017/config/v1/mutate
+    snaproute.com/webhook-name: sysmgmt
+    snaproute.com/webhook-validation-url: https://127.0.0.1:8017/config/v1/validate
+  creationTimestamp: 2019-08-12T12:05:13Z
+  generation: 1
+  labels:
+    crd-owner: sysmgmt
+    snapos-category: system
+  name: fluentdcollectors.config.snaproute.com
+  resourceVersion: "2115"
+  selfLink: /apis/apiextensions.k8s.io/v1beta1/customresourcedefinitions/fluentdcollectors.config.snaproute.com
+  uid: 70d8dc2e-bcf9-11e9-9a1f-6eedd09034b8
+spec:
+  additionalPrinterColumns:
+  - JSONPath: .spec.database
+    description: Target database (for influxdb)
+    name: Database
+    type: string
+  - JSONPath: .spec.facility
+    description: Syslog facility
+    name: Facility
+    type: string
+  - JSONPath: .spec.host
+    description: Log collector host (ip or name)
+    name: Host
+    type: string
+  - JSONPath: .spec.inType
+    description: Defines the type of logs we want to collect (fluentd source)
+    name: InType
+    type: string
+  - JSONPath: .spec.outType
+    description: Defines the collector (fluentd output plugin)
+    name: OutType
+    type: string
+  - JSONPath: .spec.password
+    description: Login password (for influxdb)
+    name: Password
+    type: string
+  - JSONPath: .spec.port
+    description: Port number on which we send logs
+    name: Port
+    type: string
+  - JSONPath: .spec.protocol
+    description: Transport Protocol to use with syslog
+    name: Protocol
+    type: string
+  - JSONPath: .spec.severity
+    description: Syslog severity Information
+    name: Severity
+    type: string
+  - JSONPath: .spec.tableName
+    description: Target database table (for influxdb)
+    name: TableName
+    type: string
+  - JSONPath: .spec.user
+    description: Login user (for influxdb)
+    name: User
+    type: string
+  group: config.snaproute.com
+  names:
+    categories:
+    - sysmgmt
+    - system
+    kind: FluentdCollector
+    listKind: FluentdCollectorList
+    plural: fluentdcollectors
+    singular: fluentdcollector
+  scope: Namespaced
+  validation:
+    openAPIV3Schema:
+      properties:
+        spec:
+          description: Sets the properties for a fluentdCollector instance - input,
+            output, host, protocol, severity, database parameters, etc.
+          properties:
+            database:
+              description: Target database (for influxdb)
+              format: string
+              type: string
+            facility:
+              description: Syslog facility
+              format: string
+              type: string
+            host:
+              description: Log collector host (ip or name)
+              format: string
+              type: string
+            inType:
+              description: Defines the type of logs we want to collect (fluentd source)
+              enum:
+              - syslog
+              - file
+              - container
+              format: string
+              type: string
+            outType:
+              description: Defines the collector (fluentd output plugin)
+              enum:
+              - syslog
+              - influxdb
+              - elasticsearch
+              - forward
+              format: string
+              type: string
+            password:
+              description: Login password (for influxdb)
+              format: string
+              type: string
+            port:
+              description: Port number on which we send logs
+              format: int32
+              type: integer
+            protocol:
+              description: Transport Protocol to use with syslog
+              format: string
+              type: string
+            severity:
+              description: Syslog severity Information
+              enum:
+              - emerg
+              - alert
+              - crit
+              - err
+              - warning
+              - notice
+              - info
+              - debug
+              - all
+              format: string
+              type: string
+            tableName:
+              description: Target database table (for influxdb)
+              format: string
+              type: string
+            user:
+              description: Login user (for influxdb)
+              format: string
+              type: string
+          required:
+          - host
+          - port
+  version: v1
+  versions:
+  - name: v1
+    served: true
+    storage: true
+{{- end }}

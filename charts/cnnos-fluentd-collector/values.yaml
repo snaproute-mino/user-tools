@@ -1,0 +1,47 @@
+
+create:
+  crd: false
+  fluentdCollector: true
+
+# types of logs to collect from CN-NOS
+collectors:
+  file: true
+  container: true
+  syslog: true
+
+# type of log server to send logs
+# supported values: elasticsearch forward influxdb syslog
+outputType: elasticsearch
+
+# required fields
+#
+# host:    # host should be a dns name or ip address of the log server
+# port:    # port is the port to use when connecting to log server
+protocol: TCP  # protocol type to use when connecting to log server
+
+# optional fields
+username: ""
+password: ""
+# tableName: fluentd
+
+
+federation:
+  enabled: false
+
+  createNamespace: true
+  createHostClusterCRD: false
+
+  clusterSelector:
+    matchLabels:
+      snaproute.com/cnf-logging: "true"
+
+  clusters:
+  # - name: leaf1
+  # - name: leaf2
+
+  overrides:
+    crdEnabled: false
+    crd: {}
+
+    fluentdCollectorEnabled: false
+    fluentdCollector: {}
