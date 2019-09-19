@@ -292,19 +292,20 @@ Update Complete. ⎈ Happy Helming!⎈
 ubuntu@server:~$ helm search cnnos-release/cnnos-monolithic --versions
 
 NAME                          	CHART VERSION	APP VERSION	DESCRIPTION                
+cnnos-release/cnnos-monolithic	v1.2.0-R5    	v1.2.0-R5  	A Helm chart for Kubernetes
 cnnos-release/cnnos-monolithic	v1.1.0-R15   	v1.1.0-R15 	A Helm chart for Kubernetes
 
 ```
 
 4) Download the desired version chart
 
-For this example, we are copying the "v1.1.0-R15" version listed in the search results and setting it to VERSION variable below.
+For this example, we are copying the "v1.2.0-R5" version listed in the search results and setting it to VERSION variable below.
 
 Copy these lines to fetch the image:
 
 ```
 ubuntu@server:~$ 
-VERSION=v1.1.0-R15
+VERSION=v1.2.0-R5
 helm fetch cnnos-release/cnnos-monolithic --version ${VERSION}
 ```
 
@@ -313,7 +314,7 @@ helm fetch cnnos-release/cnnos-monolithic --version ${VERSION}
 ```
 ubuntu@server:~$ 
 PULL_SECRET=snaproute-pull-secret
-VERSION=v1.1.0-R15
+VERSION=v1.2.0-R5
 helm template --name onie-http-server --set imagePullSecret=${PULL_SECRET} cnnos-monolithic-${VERSION}.tgz | kubectl create -f -
 ```
 
